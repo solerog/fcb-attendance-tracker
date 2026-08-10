@@ -1,0 +1,27 @@
+name: Daily Process and Reminders
+
+on:
+  schedule:
+    - cron: "10 7 * * *" # daily at 07:10 UTC
+  workflow_dispatch:
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Process attendance and send reminders
+        env:
+          MAIL_USER: ${{ secrets.MAIL_USER }}
+          MAIL_PASS: ${{ secrets.MAIL_PASS }}
+        run: |
+          python actions/process_attendance.py
+          python actions/send_reminders.py

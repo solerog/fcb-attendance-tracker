@@ -26,29 +26,30 @@ def save_matches(matches):
 def fetch(team_id, season, api_key):
     headers = {}
     if api_key:
-        headers["x-apisports-key"] = api_key
-    url = f"https://v3.football.api-sports.io/fixtures?team={team_id}&season={season}&next=100"
+        headers["X-Auth-Token"] = api_key
+    url = f"https://api.football-data.org/v4/teams/{team_id}/matches?season={season}"
     resp = requests.get(url, headers=headers, timeout=30)
     resp.raise_for_status()
     data = resp.json()
-    items = data.get("response", [])
+    items = data.get("matches", [])
     matches = []
     for it in items:
-        fix = it.get("fixture", {})
-        teams = it.get("teams", {})
-        league = it.get("league", {})
         match = {
-            "id": fix.get("id"),
-            "date": fix.get("date"),
-            "timestamp": fix.get("timestamp"),
-            "home": teams.get("home", {}).get("name"),
-            "away": teams.get("away", {}).get("name"),
-            "home_id": teams.get("home", {}).get("id"),
-            "away_id": teams.get("away", {}).get("id"),
-            "venue": fix.get("venue", {}).get("name"),
-            "league": league.get("name"),
-            "season": season,
-            "status": fix.get("status", {}).get("short"),
+            "id": it.get("id"),
+            "date": it.get("utcDate"),
+            "timestamp": None,
+            "home": it.get("homeTeam", {}).get("name"),
+            "away": it.get("awayTeam", {}).get("name"),
+            "home_id": it.get("homeTeam", {}).get("id"),
+            "away_id": it.get("awayTeam", {}).get("id"),
+            "venue": it.get("venue"),
+            "league": it.get("competition", {}).get("name"),
+            "competition_code": it.get("competition", {}).get("code"),
+            "season": it.get("season", {}).get("startDate") or season,
+            "season_end": it.get("season", {}).get("endDate"),
+            "matchday": it.get("matchday"),
+            "status": it.get("status"),
+            "last_updated": it.get("lastUpdated"),
             "requests_open": False,
         }
         matches.append(match)
@@ -59,7 +60,7 @@ def main():
     settings = load_settings()
     team_id = settings.get("team_id")
     season = settings.get("season")
-    api_key = os.environ.get("API_FOOTBALL_KEY")
+    api_key = os.environ.get("FOOTBALL_DATA_KEY")
     if not team_id or not season:
         print("Please set team_id and season in data/settings.json")
         return

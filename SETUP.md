@@ -1,7 +1,7 @@
 # FCB Tracker - Setup
 
 1. Add repository secrets (Settings -> Secrets):
-   - `API_FOOTBALL_KEY` – la teva clau d'api-football
+   - `FOOTBALL_DATA_KEY` – la teva clau d'api-football
    - `MAIL_USER` – compte Gmail (email)
    - `MAIL_PASS` – App password de Gmail
 
@@ -15,7 +15,7 @@
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-export API_FOOTBALL_KEY=...
+export FOOTBALL_DATA_KEY=...
 export MAIL_USER=...
 export MAIL_PASS=...
 python actions/fetch_matches.py

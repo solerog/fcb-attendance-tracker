@@ -48,7 +48,10 @@ def is_info_updated(new_info):
     if not os.path.exists(path):
         return True
     with open(path, "r", encoding="utf-8") as f:
-        existing_info = json.load(f)
+        try:
+            existing_info = json.load(f)
+        except json.JSONDecodeError:
+            return True
     return existing_info != new_info
 
 

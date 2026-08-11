@@ -2,7 +2,7 @@ name: Cron Fetch Matches
 
 on:
   schedule:
-    - cron: "0 */2 * * *" # every 2 hours
+    - cron: "0 */6 * * *" # every 6 hours
   workflow_dispatch:
 
 jobs:
@@ -12,21 +12,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@v9
         with:
+          version: "0.12.3"
           python-version: "3.14"
-      - name: Install deps
+          enable-cache: true
+      - name: Sync project (install deps)
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install uv
-          uv install --no-editable
+          uv sync --dev
       - name: Run fetch and check scripts
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
         run: |
-          python actions/fetch_matches.py
-          python actions/check_requests.py
+          uv run python actions/fetch_matches.py
+          uv run python actions/check_requests.py
       - name: Commit data changes
         run: |
           git config user.name "github-actions[bot]"

@@ -33,27 +33,25 @@ def fetch(team_id, season, api_key):
     data = resp.json()
     items = data.get("matches", [])
     print(items[0] if items else "No items found")
-    matches = []
+    home_matches = []
     for it in items:
+        if it.get("homeTeam", {}).get("id") != team_id:
+            continue
         match = {
             "id": it.get("id"),
             "date": it.get("utcDate"),
-            "home_name": it.get("homeTeam", {}).get("name"),
             "away_name": it.get("awayTeam", {}).get("name"),
-            "home_shortname": it.get("homeTeam", {}).get("shortName"),
             "away_shortname": it.get("awayTeam", {}).get("shortName"),
-            "home_tla": it.get("homeTeam", {}).get("tla"),
             "away_tla": it.get("awayTeam", {}).get("tla"),
+            "away_crest": it.get("awayTeam", {}).get("crest"),
             "league": it.get("competition", {}).get("name"),
             "matchday": it.get("matchday"),
             "status": it.get("status"),
             "last_updated": it.get("lastUpdated"),
-            "home_crest": it.get("homeTeam", {}).get("crest"),
-            "away_crest": it.get("awayTeam", {}).get("crest"),
         }
-        matches.append(match)
-    print(matches[0] if matches else "No matches found")
-    return matches
+        home_matches.append(match)
+    print(home_matches[0] if home_matches else "No home matches found")
+    return home_matches
 
 
 def main():

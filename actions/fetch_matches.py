@@ -6,10 +6,6 @@ import os
 from utils.helper import is_data_updated, load_settings, save_data
 from utils.url import FootballDataClient
 
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DATA_DIR = os.path.join(REPO_ROOT, "data")
-os.makedirs(DATA_DIR, exist_ok=True)
-
 
 def fetch(team_id, season, api_key):
     client = FootballDataClient(api_key=api_key)

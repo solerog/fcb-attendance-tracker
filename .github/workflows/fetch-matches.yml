@@ -1,4 +1,4 @@
-name: Fetch Barça Matches
+name: Fetch Team Matches
 
 on:
   schedule:

@@ -66,7 +66,7 @@ def main():
     team_info = fetch(team_id, season, api_key)
     if is_info_updated(team_info):
         save_info(team_info)
-        print(f"Saved {len(team_info)} team info to data/fcb.json")
+        print("Saved team info to data/fcb.json")
     else:
         print("No changes in team info.")
 

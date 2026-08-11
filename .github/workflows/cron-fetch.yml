@@ -32,27 +32,24 @@ jobs:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
         run: |
           uv run python actions/fetch_matches.py
-        # uv run python actions/check_requests.py
+          uv run python actions/check_requests.py
       # Commit changes and create a pull request if there are any updates
-      - name: Generate branch variables
-        id: vars
-        run: |
-          echo "branch=bot/update-matches-$(date +%Y%m%d%H%M%S)" >> "$GITHUB_OUTPUT"
-          echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.vars.outputs.branch }}
+          branch: bot/update-matches
           base: main
           title: "Update matches"
-          commit-message: "bot: Update matches.json"
-          body: "Automatic update of `matches.json`. Github action run on ${{ steps.vars.outputs.timestamp }}."
+          commit-message: |
+            bot: Update matches.json
+            Automatic update of `matches.json`.
+            Github action run on ${{ steps.vars.outputs.timestamp }}.
       - name: Enable auto merge
         run: |
           gh pr merge \
             --squash \
             --delete-branch \
-            "${{ steps.vars.outputs.branch }}"
+            bot/update-matches
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

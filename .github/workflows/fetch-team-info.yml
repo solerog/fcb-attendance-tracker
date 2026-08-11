@@ -28,27 +28,30 @@ jobs:
           uv sync --dev
       # Run scripts to fetch matches and check requests
       - name: Run fetch and check scripts
+        id: fetch_team_info
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
         run: |
           uv run python actions/fetch_team_info.py
       # Commit changes and create a pull request if there are any updates
       - name: Create Pull Request
+        if: steps.fetch_team_info.outputs.updated == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: bot/update-matches
+          branch: bot/update-team-info
           base: main
-          title: "Update matches"
+          title: "Update team info"
           commit-message: |
-            bot: Update matches.json
-            Automatic update of `matches.json`.
+            bot: Update fcb.json
+            Automatic update of `fcb.json`.
             Github action run on ${{ steps.vars.outputs.timestamp }}.
       - name: Enable auto merge
+        if: steps.fetch_team_info.outputs.updated == 'true'
         run: |
           gh pr merge \
           --squash \
           --delete-branch \
-          bot/update-matches
+          bot/update-team-info
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

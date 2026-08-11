@@ -64,11 +64,14 @@ def main():
         print("Please set team_id and season in data/settings.json")
         return
     team_info = fetch(team_id, season, api_key)
-    if is_info_updated(team_info):
+    updated = is_info_updated(team_info)
+    if updated:
         save_info(team_info)
         print("Saved team info to data/fcb.json")
     else:
         print("No changes in team info.")
+    with open(os.environ.get("GITHUB_OUTPUT", ""), "a") as f:
+        f.write(f"updated={'true' if updated else 'false'}\n")
 
 
 if __name__ == "__main__":

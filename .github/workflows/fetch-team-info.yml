@@ -32,7 +32,7 @@ jobs:
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
         run: |
-          uv run python actions/fetch_team_info.py
+          uv run python -m actions.fetch_team_info.py
       # Commit changes and create a pull request if there are any updates
       - name: Create Pull Request
         if: steps.fetch_team_info.outputs.updated == 'true'

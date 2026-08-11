@@ -1,7 +1,11 @@
 {
-  "team_id": 529,
+  "team_id": 81,
   "season": 2026,
   "barca_request_url": "https://www.fcbarcelona.com/en/tickets",
-  "members": ["parent1@example.com", "parent2@example.com", "member@example.com"],
+  "members": [
+    "parent1@example.com",
+    "parent2@example.com",
+    "member@example.com"
+  ],
   "subscriptions": 3
 }

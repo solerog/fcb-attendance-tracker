@@ -38,20 +38,18 @@ def fetch(team_id, season, api_key):
         match = {
             "id": it.get("id"),
             "date": it.get("utcDate"),
-            "timestamp": None,
-            "home": it.get("homeTeam", {}).get("name"),
-            "away": it.get("awayTeam", {}).get("name"),
-            "home_id": it.get("homeTeam", {}).get("id"),
-            "away_id": it.get("awayTeam", {}).get("id"),
-            "venue": it.get("venue"),
+            "home_name": it.get("homeTeam", {}).get("name"),
+            "away_name": it.get("awayTeam", {}).get("name"),
+            "home_shortname": it.get("homeTeam", {}).get("shortName"),
+            "away_shortname": it.get("awayTeam", {}).get("shortName"),
+            "home_tla": it.get("homeTeam", {}).get("tla"),
+            "away_tla": it.get("awayTeam", {}).get("tla"),
             "league": it.get("competition", {}).get("name"),
-            "competition_code": it.get("competition", {}).get("code"),
-            "season": it.get("season", {}).get("startDate") or season,
-            "season_end": it.get("season", {}).get("endDate"),
             "matchday": it.get("matchday"),
             "status": it.get("status"),
             "last_updated": it.get("lastUpdated"),
-            "requests_open": False,
+            "home_crest": it.get("homeTeam", {}).get("crest"),
+            "away_crest": it.get("awayTeam", {}).get("crest"),
         }
         matches.append(match)
     print(matches[0] if matches else "No matches found")

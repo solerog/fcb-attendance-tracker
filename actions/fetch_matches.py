@@ -1,36 +1,19 @@
 #!/usr/bin/env python3
 """Fetch matches from api-football and write normalized JSON"""
 
-import json
 import os
 
-import requests
+from utils.helper import is_data_updated, load_settings, save_data
+from utils.url import FootballDataClient
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(REPO_ROOT, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 
-def load_settings():
-    path = os.path.join(DATA_DIR, "settings.json")
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def save_matches(matches):
-    out = os.path.join(DATA_DIR, "matches.json")
-    with open(out, "w", encoding="utf-8") as f:
-        json.dump(matches, f, ensure_ascii=False, indent=2)
-
-
 def fetch(team_id, season, api_key):
-    headers = {}
-    if api_key:
-        headers["X-Auth-Token"] = api_key
-    url = f"https://api.football-data.org/v4/teams/{team_id}/matches?season={season}"
-    resp = requests.get(url, headers=headers, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
+    client = FootballDataClient(api_key=api_key)
+    data = client.team_matches(team_id, season)
     items = data.get("matches", [])
     print(items[0] if items else "No items found")
     home_matches = []
@@ -63,8 +46,14 @@ def main():
         print("Please set team_id and season in data/settings.json")
         return
     matches = fetch(team_id, season, api_key)
-    save_matches(matches)
-    print(f"Saved {len(matches)} matches to data/matches.json")
+    updated = is_data_updated(matches, "matches.json")
+    if updated:
+        save_data(matches, "matches.json")
+        print(f"Saved {len(matches)} matches to data/matches.json")
+    else:
+        print("No changes in matches info.")
+    with open(os.environ.get("GITHUB_OUTPUT", ""), "a") as f:
+        f.write(f"updated={'true' if updated else 'false'}\n")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,32 @@
+import json
+import os
+
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DATA_DIR = os.path.join(REPO_ROOT, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+
+def load_settings(path=None):
+    if path is None:
+        path = os.path.join(DATA_DIR, "settings.json")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_data(data, filename, directory=DATA_DIR):
+    out = os.path.join(directory, filename)
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def is_data_updated(new_data, filename, directory=DATA_DIR):
+    """Check if the new info is different from the existing info in the specified file"""
+    path = os.path.join(directory, filename)
+    if not os.path.exists(path):
+        return True
+    with open(path, "r", encoding="utf-8") as f:
+        try:
+            existing_data = json.load(f)
+        except json.JSONDecodeError:
+            return True
+    return existing_data != new_data

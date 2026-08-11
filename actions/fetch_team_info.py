@@ -1,36 +1,19 @@
 #!/usr/bin/env python3
 """Fetch matches from api-football and write normalized JSON"""
 
-import json
 import os
 
-import requests
+from utils.helper import is_data_updated, load_settings, save_data
+from utils.url import FootballDataClient
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(REPO_ROOT, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 
-def load_settings():
-    path = os.path.join(DATA_DIR, "settings.json")
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def save_info(info):
-    out = os.path.join(DATA_DIR, "fcb.json")
-    with open(out, "w", encoding="utf-8") as f:
-        json.dump(info, f, ensure_ascii=False, indent=2)
-
-
 def fetch(team_id, season, api_key):
-    headers = {}
-    if api_key:
-        headers["X-Auth-Token"] = api_key
-    url = f"https://api.football-data.org/v4/teams/{team_id}?season={season}"
-    resp = requests.get(url, headers=headers, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
+    client = FootballDataClient(api_key=api_key)
+    data = client.team_info(team_id, season)
     info = {
         "id": data.get("id"),
         "name": data.get("name"),
@@ -42,19 +25,6 @@ def fetch(team_id, season, api_key):
     return info
 
 
-def is_info_updated(new_info):
-    """Check if the new info is different from the existing info in fcb.json"""
-    path = os.path.join(DATA_DIR, "fcb.json")
-    if not os.path.exists(path):
-        return True
-    with open(path, "r", encoding="utf-8") as f:
-        try:
-            existing_info = json.load(f)
-        except json.JSONDecodeError:
-            return True
-    return existing_info != new_info
-
-
 def main():
     settings = load_settings()
     team_id = settings.get("team_id")
@@ -64,9 +34,9 @@ def main():
         print("Please set team_id and season in data/settings.json")
         return
     team_info = fetch(team_id, season, api_key)
-    updated = is_info_updated(team_info)
+    updated = is_data_updated(team_info, "fcb.json")
     if updated:
-        save_info(team_info)
+        save_data(team_info, "fcb.json")
         print("Saved team info to data/fcb.json")
     else:
         print("No changes in team info.")

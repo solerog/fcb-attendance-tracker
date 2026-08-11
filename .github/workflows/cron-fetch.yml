@@ -47,9 +47,7 @@ jobs:
           base: main
           title: "Update matches"
           commit-message: "bot: Update matches.json"
-          body: |
-            Automatic update of `matches.json`.
-            Github action run on ${{ steps.vars.outputs.timestamp }}.
+          body: "Automatic update of `matches.json`. Github action run on ${{ steps.vars.outputs.timestamp }}."
       - name: Enable auto merge
         run: |
           gh pr merge \

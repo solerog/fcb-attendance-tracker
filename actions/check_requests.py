@@ -3,7 +3,7 @@
 
 import json
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 import requests
 
@@ -33,13 +33,13 @@ def check(url):
         found = any(k in text for k in keywords)
         return {
             "url": url,
-            "checked_at": datetime.utcnow().isoformat() + "Z",
+            "checked_at": datetime.now(UTC).isoformat() + "Z",
             "found": found,
         }
     except Exception as e:
         return {
             "url": url,
-            "checked_at": datetime.utcnow().isoformat() + "Z",
+            "checked_at": datetime.now(UTC).isoformat() + "Z",
             "error": str(e),
         }
 

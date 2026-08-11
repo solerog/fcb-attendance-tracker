@@ -13,6 +13,7 @@ jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
+      # Setup the repository and install dependencies
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
@@ -25,29 +26,35 @@ jobs:
       - name: Sync project (install deps)
         run: |
           uv sync --dev
+      # Run scripts to fetch matches and check requests
       - name: Run fetch and check scripts
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
         run: |
           uv run python actions/fetch_matches.py
-          uv run python actions/check_requests.py
-      - name: Commit data changes and open PR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          BRANCH_BASE: main
+        # uv run python actions/check_requests.py
+      # Commit changes and create a pull request if there are any updates
+      - name: Generate branch variables
+        id: vars
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data || true
-          if ! git diff --quiet --cached; then
-            branch="data-update-$(date +%Y%m%d%H%M%S)"
-            git checkout -b "$branch"
-            git commit -m "Update data from cron fetch" || true
-            git push --set-upstream origin "$branch"
-            echo "Creating pull request for $branch -> $BRANCH_BASE"
-            payload=$(cat <<EOF {"title":"Automated data update","head":"$branch","base":"$BRANCH_BASE","body":"Automated data update from cron fetch"} EOF)
-            curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/$REPO/pulls -d "$payload" || true
-          else
-            echo "No data changes"
-          fi
+          echo "branch=bot/update-matches-$(date +%Y%m%d%H%M%S)" >> "$GITHUB_OUTPUT"
+          echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.vars.outputs.branch }}
+          base: main
+          title: "Update matches"
+          commit-message: "bot: Update matches.json"
+          body: |
+            Automatic update of `matches.json`.
+            Github action run on ${{ steps.vars.outputs.timestamp }}.
+      - name: Enable auto merge
+        run: |
+          gh pr merge \
+            --squash \
+            --delete-branch \
+            "${{ steps.vars.outputs.branch }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -32,6 +32,7 @@ def fetch(team_id, season, api_key):
     resp.raise_for_status()
     data = resp.json()
     items = data.get("matches", [])
+    print(items[0] if items else "No items found")
     matches = []
     for it in items:
         match = {
@@ -53,6 +54,7 @@ def fetch(team_id, season, api_key):
             "requests_open": False,
         }
         matches.append(match)
+    print(matches[0] if matches else "No matches found")
     return matches
 
 

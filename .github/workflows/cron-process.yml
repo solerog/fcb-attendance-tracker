@@ -47,7 +47,10 @@ jobs:
             git commit -m "Update data from cron process" || true
             git push --set-upstream origin "$branch"
             echo "Creating pull request for $branch -> $BRANCH_BASE"
-            payload=$(cat <<EOF {"title":"Automated data update","head":"$branch","base":"$BRANCH_BASE","body":"Automated data update from cron process"} EOF)
+            payload=$(cat <<EOF
+{"title":"Automated data update","head":"$branch","base":"$BRANCH_BASE","body":"Automated data update from cron process"}
+EOF
+)
             curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/$REPO/pulls -d "$payload" || true
           else
             echo "No data changes"

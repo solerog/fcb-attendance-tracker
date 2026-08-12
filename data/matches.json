@@ -6,10 +6,9 @@
     "away_shortname": "Athletic",
     "away_tla": "ATH",
     "away_crest": "https://crests.football-data.org/77.png",
-    "league": "Primera Division",
     "matchday": 1,
     "status": "TIMED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564650,
@@ -18,10 +17,9 @@
     "away_shortname": "Rayo Vallecano",
     "away_tla": "RAY",
     "away_crest": "https://crests.football-data.org/87.png",
-    "league": "Primera Division",
     "matchday": 3,
     "status": "TIMED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564687,
@@ -30,10 +28,9 @@
     "away_shortname": "Santander",
     "away_tla": "SAN",
     "away_crest": "https://crests.football-data.org/5335.png",
-    "league": "Primera Division",
     "matchday": 6,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564700,
@@ -42,10 +39,9 @@
     "away_shortname": "Getafe",
     "away_tla": "GET",
     "away_crest": "https://crests.football-data.org/82.png",
-    "league": "Primera Division",
     "matchday": 8,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564723,
@@ -54,22 +50,20 @@
     "away_shortname": "Real Madrid",
     "away_tla": "RMA",
     "away_crest": "https://crests.football-data.org/86.png",
-    "league": "Primera Division",
     "matchday": 10,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564732,
     "date": "2026-11-01T00:00:00Z",
-    "away_name": "Deportivo Alavés",
-    "away_shortname": "Alavés",
+    "away_name": "Deportivo Alav\u00e9s",
+    "away_shortname": "Alav\u00e9s",
     "away_tla": "ALA",
     "away_crest": "https://crests.football-data.org/263.png",
-    "league": "Primera Division",
     "matchday": 11,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564749,
@@ -78,10 +72,9 @@
     "away_shortname": "Villarreal",
     "away_tla": "VIL",
     "away_crest": "https://crests.football-data.org/94.png",
-    "league": "Primera Division",
     "matchday": 13,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564773,
@@ -90,22 +83,20 @@
     "away_shortname": "Celta",
     "away_tla": "CEL",
     "away_crest": "https://crests.football-data.org/558.png",
-    "league": "Primera Division",
     "matchday": 15,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564793,
     "date": "2026-12-20T00:00:00Z",
-    "away_name": "Real Sociedad de Fútbol",
+    "away_name": "Real Sociedad de F\u00fatbol",
     "away_shortname": "Real Sociedad",
     "away_tla": "RSO",
     "away_crest": "https://crests.football-data.org/92.png",
-    "league": "Primera Division",
     "matchday": 17,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564819,
@@ -114,10 +105,9 @@
     "away_shortname": "Elche",
     "away_tla": "ELC",
     "away_crest": "https://crests.football-data.org/285.png",
-    "league": "Primera Division",
     "matchday": 20,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564844,
@@ -126,22 +116,20 @@
     "away_shortname": "Valencia",
     "away_tla": "VAL",
     "away_crest": "https://crests.football-data.org/95.png",
-    "league": "Primera Division",
     "matchday": 22,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564857,
     "date": "2027-02-07T00:00:00Z",
-    "away_name": "Club Atlético de Madrid",
+    "away_name": "Club Atl\u00e9tico de Madrid",
     "away_shortname": "Atleti",
     "away_tla": "ATL",
     "away_crest": "https://crests.football-data.org/78.png",
-    "league": "Primera Division",
     "matchday": 23,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564871,
@@ -150,34 +138,31 @@
     "away_shortname": "Levante",
     "away_tla": "LEV",
     "away_crest": "https://crests.football-data.org/88.png",
-    "league": "Primera Division",
     "matchday": 25,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564888,
     "date": "2027-03-07T00:00:00Z",
-    "away_name": "Real Betis Balompié",
+    "away_name": "Real Betis Balompi\u00e9",
     "away_shortname": "Real Betis",
     "away_tla": "BET",
     "away_crest": "https://crests.football-data.org/90.png",
-    "league": "Primera Division",
     "matchday": 27,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564906,
     "date": "2027-03-14T00:00:00Z",
-    "away_name": "RC Deportivo La Coruña",
+    "away_name": "RC Deportivo La Coru\u00f1a",
     "away_shortname": "Deportivo",
     "away_tla": "DEP",
     "away_crest": "https://crests.football-data.org/560.png",
-    "league": "Primera Division",
     "matchday": 28,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564919,
@@ -186,10 +171,9 @@
     "away_shortname": "Sevilla FC",
     "away_tla": "SEV",
     "away_crest": "https://crests.football-data.org/559.png",
-    "league": "Primera Division",
     "matchday": 30,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564939,
@@ -198,10 +182,9 @@
     "away_shortname": "Espanyol",
     "away_tla": "ESP",
     "away_crest": "https://crests.football-data.org/80.png",
-    "league": "Primera Division",
     "matchday": 32,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564961,
@@ -210,21 +193,19 @@
     "away_shortname": "Osasuna",
     "away_tla": "OSA",
     "away_crest": "https://crests.football-data.org/79.png",
-    "league": "Primera Division",
     "matchday": 34,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   },
   {
     "id": 564989,
     "date": "2027-05-23T00:00:00Z",
-    "away_name": "Málaga CF",
-    "away_shortname": "Málaga",
+    "away_name": "M\u00e1laga CF",
+    "away_shortname": "M\u00e1laga",
     "away_tla": "MAL",
     "away_crest": "https://crests.football-data.org/84.png",
-    "league": "Primera Division",
     "matchday": 37,
     "status": "SCHEDULED",
-    "last_updated": "2026-08-12T05:20:20Z"
+    "competition_id": "PD"
   }
 ]

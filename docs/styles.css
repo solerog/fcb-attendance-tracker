@@ -26,10 +26,8 @@ body {
     margin: 0;
     min-height: 100vh;
     font-family: Inter, "Segoe UI", sans-serif;
-    background:
-        radial-gradient(circle at top left, rgba(62, 196, 255, 0.22), transparent 25%),
-        radial-gradient(circle at bottom right, rgba(138, 92, 246, 0.18), transparent 30%),
-        linear-gradient(140deg, var(--bg), var(--bg-2));
+    background: #911a04;
+    background: linear-gradient(150deg, rgba(145, 26, 4, 1) 1%, rgba(10, 65, 143, 1) 17%, rgba(1, 47, 150, 1) 83%, rgba(179, 34, 53, 1) 100%);
     color: var(--text);
 }
 
@@ -313,6 +311,13 @@ img {
     font-size: 1rem;
 }
 
+.featured-comp-crest {
+    height: 24px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.1));
+}
+
 .featured-tag {
     display: inline-flex;
     align-items: center;
@@ -344,7 +349,7 @@ img {
     width: 110px;
     height: 110px;
     object-fit: contain;
-    filter: drop-shadow(0 10px 20px rgba(255,255,255,0.08));
+    filter: drop-shadow(0 10px 20px rgba(255, 255, 255, 0.08));
 }
 
 .featured-team span {
@@ -367,8 +372,8 @@ img {
 
 .featured-box,
 .featured-deadline {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
     padding: 12px 14px;
 }
@@ -384,7 +389,7 @@ img {
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
-    background: linear-gradient(135deg, rgba(62,196,255,0.1), rgba(138,92,246,0.08));
+    background: linear-gradient(135deg, rgba(62, 196, 255, 0.1), rgba(138, 92, 246, 0.08));
 }
 
 .featured-deadline span {

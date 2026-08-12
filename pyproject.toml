@@ -1,7 +1,7 @@
 [project]
-name = "fcb-tracker"
+name = "fcb-attendance-tracker"
 version = "0.1.0"
-description = "Add your description here"
+description = "FC Barcelona attendance tracker"
 readme = "README.md"
 authors = [
     { name = "Roger Sole", email = "rogersolesotillo@gmail.com" }
@@ -14,8 +14,11 @@ dependencies = [
 ]
 
 [project.scripts]
-fcb-tracker = "fcb_tracker:main"
+fcb-attendance-tracker = "fcb_attendance-tracker:main"
 
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv]
+package = false

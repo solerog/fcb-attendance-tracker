@@ -8,7 +8,7 @@
     "away_crest": "https://crests.football-data.org/77.png",
     "matchday": 1,
     "status": "TIMED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564650,
@@ -19,7 +19,7 @@
     "away_crest": "https://crests.football-data.org/87.png",
     "matchday": 3,
     "status": "TIMED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564687,
@@ -30,7 +30,7 @@
     "away_crest": "https://crests.football-data.org/5335.png",
     "matchday": 6,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564700,
@@ -41,7 +41,7 @@
     "away_crest": "https://crests.football-data.org/82.png",
     "matchday": 8,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564723,
@@ -52,7 +52,7 @@
     "away_crest": "https://crests.football-data.org/86.png",
     "matchday": 10,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564732,
@@ -63,7 +63,7 @@
     "away_crest": "https://crests.football-data.org/263.png",
     "matchday": 11,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564749,
@@ -74,7 +74,7 @@
     "away_crest": "https://crests.football-data.org/94.png",
     "matchday": 13,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564773,
@@ -85,7 +85,7 @@
     "away_crest": "https://crests.football-data.org/558.png",
     "matchday": 15,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564793,
@@ -96,7 +96,7 @@
     "away_crest": "https://crests.football-data.org/92.png",
     "matchday": 17,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564819,
@@ -107,7 +107,7 @@
     "away_crest": "https://crests.football-data.org/285.png",
     "matchday": 20,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564844,
@@ -118,7 +118,7 @@
     "away_crest": "https://crests.football-data.org/95.png",
     "matchday": 22,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564857,
@@ -129,7 +129,7 @@
     "away_crest": "https://crests.football-data.org/78.png",
     "matchday": 23,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564871,
@@ -140,7 +140,7 @@
     "away_crest": "https://crests.football-data.org/88.png",
     "matchday": 25,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564888,
@@ -151,7 +151,7 @@
     "away_crest": "https://crests.football-data.org/90.png",
     "matchday": 27,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564906,
@@ -162,7 +162,7 @@
     "away_crest": "https://crests.football-data.org/560.png",
     "matchday": 28,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564919,
@@ -173,7 +173,7 @@
     "away_crest": "https://crests.football-data.org/559.png",
     "matchday": 30,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564939,
@@ -184,7 +184,7 @@
     "away_crest": "https://crests.football-data.org/80.png",
     "matchday": 32,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564961,
@@ -195,7 +195,7 @@
     "away_crest": "https://crests.football-data.org/79.png",
     "matchday": 34,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   },
   {
     "id": 564989,
@@ -206,6 +206,6 @@
     "away_crest": "https://crests.football-data.org/84.png",
     "matchday": 37,
     "status": "SCHEDULED",
-    "competition_id": "PD"
+    "competition_code": "PD"
   }
 ]

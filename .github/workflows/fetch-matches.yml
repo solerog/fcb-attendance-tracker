@@ -33,6 +33,7 @@ jobs:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
         run: |
           uv run python -m actions.fetch_matches
+          uv run python -m actions.check_requests
       # Commit changes and create a pull request if there are any updates
       - name: Create Pull Request
         if: steps.fetch_matches.outputs.updated == 'true'

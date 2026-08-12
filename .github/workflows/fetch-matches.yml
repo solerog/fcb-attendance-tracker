@@ -27,16 +27,24 @@ jobs:
         run: |
           uv sync --dev
       # Run scripts to fetch matches and check requests
-      - name: Run fetch and check scripts
+      - name: Fetch next matches
         id: fetch_matches
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
         run: |
           uv run python -m actions.fetch_matches
+      - name: Fetch open ticket requests
+        id: fetch_open_requests
+        env:
+          FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
+        run: |
           uv run python -m actions.fetch_open_requests
       # Commit changes and create a pull request if there are any updates
       - name: Create Pull Request
-        if: steps.fetch_matches.outputs.updated == 'true'
+        id: create_pr
+        if: >
+          steps.fetch_matches.outputs.updated == 'true' ||
+          steps.fetch_open_requests.outputs.updated == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -47,12 +55,12 @@ jobs:
             bot: Update matches.json
             Automatic update of `matches.json`.
             Github action run on ${{ steps.vars.outputs.timestamp }}.
-      - name: Enable auto merge
-        if: steps.fetch_matches.outputs.updated == 'true'
+      - name: Merge Pull Request
+        if: steps.create_pr.outputs.pull-request-number != ''
         run: |
           gh pr merge \
           --squash \
           --delete-branch \
-          bot/update-data
+          "${{ steps.create_pr.outputs.pull-request-number }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

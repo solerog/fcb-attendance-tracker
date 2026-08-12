@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check open ticket request windows for Barça matches and map them to local fixtures."""
 
+import os
 import re
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
@@ -8,7 +9,7 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 
-from utils.helper import load_matches, load_settings, save_data
+from utils.helper import is_list_dicts_updated, load_matches, load_settings, save_data
 
 LOCAL_TZ = ZoneInfo("Europe/Madrid")
 
@@ -121,26 +122,24 @@ def extract_open_matches(html):
 
 def check(url, fixtures=None):
     fixtures = fixtures or []
-    try:
-        r = requests.get(url, timeout=30)
-        r.raise_for_status()
-        page_matches = extract_open_matches(r.text)
 
-        result = []
-        for match in page_matches:
-            fixture = match_fixture(match, fixtures)
-            if not fixture:
-                continue
-            result.append(
-                {
-                    "match_id": fixture.get("match_id"),
-                    "request_deadline_local": match.get("deadline"),
-                }
-            )
+    r = requests.get(url, timeout=30)
+    r.raise_for_status()
+    page_matches = extract_open_matches(r.text)
 
-        return result
-    except Exception:
-        return []
+    result = []
+    for match in page_matches:
+        fixture = match_fixture(match, fixtures)
+        if not fixture:
+            continue
+        result.append(
+            {
+                "match_id": fixture.get("match_id"),
+                "request_deadline_local": match.get("deadline"),
+            }
+        )
+
+    return result
 
 
 def main():
@@ -152,7 +151,18 @@ def main():
 
     matches = load_matches()
     status = check(url, matches)
-    save_data(status, "open_ticket_requests.json")
+
+    requests_updated = is_list_dicts_updated(status, "open_ticket_requests.json")
+    if requests_updated:
+        save_data(status, "open_ticket_requests.json")
+        print(
+            f"Saved {len(status)} open ticket requests to data/open_ticket_requests.json"
+        )
+    else:
+        print("No changes in open ticket requests info.")
+
+    with open(os.environ.get("GITHUB_OUTPUT", ""), "a") as f:
+        f.write(f"updated={'true' if requests_updated else 'false'}\n")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Propera jornada del Barça: partits futurs, rival, data i temps restant." />
+    <title>Barça | Pròxims partits</title>
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <div class="brand">
+                <img id="clubCrest" src="" alt="Escut del FC Barcelona" />
+                <div>
+                    <p class="eyebrow">FC Barcelona</p>
+                    <h1>Pròxims partits</h1>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="hero">
+                <div class="hero-copy">
+                    <p class="eyebrow accent">Calendari 2026/27</p>
+                    <h2>La propera cita del Barça</h2>
+                    <p>
+                        Tots els partits futurs amb data, rival, estadi i temps restant
+                        fins al xoc.
+                    </p>
+                </div>
+                <div class="summary" id="summaryCards"></div>
+            </section>
+
+            <section class="matches-section">
+                <div class="section-header">
+                    <h3>Calendari</h3>
+                    <span id="matchCount" class="match-count">0 partits</span>
+                </div>
+                <div id="matchesGrid" class="matches-grid" aria-live="polite"></div>
+            </section>
+        </main>
+    </div>
+
+    <template id="matchCardTemplate">
+        <article class="match-card">
+            <div class="card-head">
+                <span class="status-pill"></span>
+                <span class="league-tag"></span>
+            </div>
+            <div class="teams">
+                <div class="team-block home">
+                    <img class="team-crest" src="" alt="Escut local" />
+                    <span class="team-name"></span>
+                </div>
+                <div class="versus">VS</div>
+                <div class="team-block away">
+                    <img class="team-crest" src="" alt="Escut rival" />
+                    <span class="team-name"></span>
+                </div>
+            </div>
+
+            <div class="match-info">
+                <div class="info-box">
+                    <span class="label">Dia</span>
+                    <strong class="date-value"></strong>
+                </div>
+                <div class="info-box">
+                    <span class="label">Hora</span>
+                    <strong class="time-value"></strong>
+                </div>
+            </div>
+
+            <div class="countdown-wrap">
+                <span class="label">Queda</span>
+                <strong class="countdown-value"></strong>
+            </div>
+        </article>
+    </template>
+
+    <script src="./app.js"></script>
+</body>
+
+</html>

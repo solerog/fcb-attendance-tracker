@@ -1,4 +1,4 @@
-name: Fetch Team Information
+name: Fetch team information
 
 on:
   schedule:

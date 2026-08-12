@@ -153,7 +153,7 @@ def main():
 
     matches = load_matches()
     status = check(url, matches)
-    save_data(status, "requests_status.json")
+    save_data(status, "open_ticket_requests.json")
     print(json.dumps(status, ensure_ascii=False, indent=2))
 
 

@@ -1,4 +1,4 @@
-name: Fetch Team Matches
+name: Fetch team matches & open ticket requests
 
 on:
   schedule:

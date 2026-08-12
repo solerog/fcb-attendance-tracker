@@ -30,13 +30,44 @@ def save_data(data, filename, directory=DATA_DIR):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def is_data_updated(new_data, filename, directory=DATA_DIR):
+def is_list_dicts_updated(
+    new_data: list[dict], filename: str, directory: str = DATA_DIR
+) -> bool:
     """Check if the new info is different from the existing info in the specified file."""
     path = os.path.join(directory, filename)
     if not os.path.exists(path):
         return True
-    try:
-        existing_data = load_file(path)
-    except json.JSONDecodeError:
+    existing_data = load_file(path)
+    if not isinstance(existing_data, list) or not all(
+        isinstance(item, dict) for item in existing_data
+    ):
+        raise TypeError(
+            f"Expected a list of dicts in {filename}, but got "
+            f"{type(existing_data).__name__}"
+        )
+    for new_item in new_data:
+        if not any(
+            all(
+                k in existing_item and existing_item[k] == new_item[k] for k in new_item
+            )
+            for existing_item in existing_data
+        ):
+            return True
+    return False
+
+
+def is_dict_updated(new_data: dict, filename: str, directory: str = DATA_DIR) -> bool:
+    """Check if the new info is different from the existing info in the specified file."""
+    path = os.path.join(directory, filename)
+    if not os.path.exists(path):
         return True
-    return existing_data != new_data
+
+    existing_data = load_file(path)
+    if not isinstance(existing_data, dict):
+        raise TypeError(
+            f"Expected a dict in {filename}, but got {type(existing_data).__name__}"
+        )
+    for key, value in new_data.items():
+        if key not in existing_data or value != existing_data[key]:
+            return True
+    return False

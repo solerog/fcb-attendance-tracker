@@ -8,10 +8,11 @@ const template = document.getElementById("matchCardTemplate");
 
 async function loadData() {
     try {
-        const [matchesResponse, teamResponse, openRequestsResponse] = await Promise.all([
+        const [matchesResponse, teamResponse, openRequestsResponse, competitionsResponse] = await Promise.all([
             fetch("../data/matches.json"),
             fetch("../data/fcb.json"),
-            fetch("../data/open_ticket_requests.json").catch(() => ({ ok: false }))
+            fetch("../data/open_ticket_requests.json").catch(() => ({ ok: false })),
+            fetch("../data/competitions.json").catch(() => ({ ok: false }))
         ]);
 
         if (!matchesResponse.ok) {
@@ -25,8 +26,14 @@ async function loadData() {
         const matches = await matchesResponse.json();
         const team = await teamResponse.json();
         const openRequests = openRequestsResponse.ok ? await openRequestsResponse.json() : [];
+        const competitions = competitionsResponse.ok ? await competitionsResponse.json() : [];
+
         const openRequestMap = new Map(
             openRequests.map((item) => [Number(item.match_id), item.request_deadline_local])
+        );
+
+        const competitionsMap = new Map(
+            competitions.map((comp) => [comp.id, comp])
         );
 
         clubCrest.src = team.crest || TEAM_CREST;
@@ -52,9 +59,9 @@ async function loadData() {
             ? upcoming.filter((match) => match.id !== featuredMatch.id)
             : upcoming;
 
-        renderFeaturedMatch(featuredMatch, team, openRequestMap);
-        renderSummary(featuredMatch || listMatches[0] || upcoming[0], listMatches, openRequestMap);
-        renderMatches(listMatches, team, openRequestMap);
+        renderFeaturedMatch(featuredMatch, team, openRequestMap, competitionsMap);
+        renderSummary(featuredMatch || listMatches[0] || upcoming[0], listMatches, openRequestMap, competitionsMap);
+        renderMatches(listMatches, team, openRequestMap, competitionsMap);
         matchCount.textContent = `${listMatches.length} partits`;
         updateCountdowns();
         setInterval(updateCountdowns, 60000);
@@ -64,11 +71,15 @@ async function loadData() {
     }
 }
 
-function renderFeaturedMatch(match, team, openRequestMap) {
+function renderFeaturedMatch(match, team, openRequestMap, competitionsMap) {
     if (!match) {
         featuredMatchContainer.innerHTML = '<div class="empty-state">No hi ha partits amb horari confirmat i entrades obertes.</div>';
         return;
     }
+
+    const competition = competitionsMap.get(match.competition_id) || {};
+    const competitionAlias = competition.alias || competition.name || "Competició";
+    const competitionCrest = competition.crest || "";
 
     const kickoff = new Date(match.date);
     const deadline = openRequestMap.get(Number(match.id));
@@ -77,7 +88,8 @@ function renderFeaturedMatch(match, team, openRequestMap) {
     featuredMatchContainer.innerHTML = `
         <div class="featured-card">
             <div class="featured-header">
-                <span class="featured-badge"><span class="featured-badge-icon">🏆</span>${match.league || "Primera Division"}</span>
+                ${competitionCrest ? `<img src="${competitionCrest}" alt="${competitionAlias}" class="featured-comp-crest" />` : ""}
+                <span class="featured-badge"><span class="featured-badge-icon">🏆</span>${competitionAlias}</span>
                 <span class="featured-tag">Entrades obertes</span>
             </div>
 
@@ -116,7 +128,7 @@ function renderFeaturedMatch(match, team, openRequestMap) {
     `;
 }
 
-function renderSummary(match, listMatches, openRequestMap) {
+function renderSummary(match, listMatches, openRequestMap, competitionsMap) {
     const highlightMatch = match || listMatches[0];
     if (!highlightMatch) {
         summaryCards.innerHTML = "";
@@ -141,7 +153,7 @@ function renderSummary(match, listMatches, openRequestMap) {
         .join("");
 }
 
-function renderMatches(matches, team, openRequestMap) {
+function renderMatches(matches, team, openRequestMap, competitionsMap) {
     matchesGrid.innerHTML = "";
 
     matches.forEach((match) => {
@@ -157,12 +169,15 @@ function renderMatches(matches, team, openRequestMap) {
         const homeCrest = card.querySelector(".team-block.home .team-crest");
         const awayCrest = card.querySelector(".team-block.away .team-crest");
 
+        const competition = competitionsMap.get(match.competition_id) || {};
+        const competitionAlias = competition.alias || competition.name || "Competició";
+
         const kickoff = new Date(match.date);
         const isTimed = match.status === "TIMED";
         const hasOpenRequests = openRequestMap.has(Number(match.id));
 
         status.textContent = isTimed ? "Horari confirmat" : normalizeStatus(match.status || "Programat");
-        leagueTag.textContent = match.league || "Lliga";
+        leagueTag.textContent = competitionAlias;
         homeName.textContent = team.shortname || team.name || "Barça";
         awayName.textContent = match.away_shortname || match.away_name || "Rival";
         homeCrest.src = team.crest || TEAM_CREST;

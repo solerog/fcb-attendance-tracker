@@ -3,13 +3,15 @@ const matchesGrid = document.getElementById("matchesGrid");
 const summaryCards = document.getElementById("summaryCards");
 const matchCount = document.getElementById("matchCount");
 const clubCrest = document.getElementById("clubCrest");
+const featuredMatchContainer = document.getElementById("featuredMatch");
 const template = document.getElementById("matchCardTemplate");
 
 async function loadData() {
     try {
-        const [matchesResponse, teamResponse] = await Promise.all([
-            fetch("./data/matches.json"),
-            fetch("./data/fcb.json")
+        const [matchesResponse, teamResponse, openRequestsResponse] = await Promise.all([
+            fetch("../data/matches.json"),
+            fetch("../data/fcb.json"),
+            fetch("../data/open_ticket_requests.json").catch(() => ({ ok: false }))
         ]);
 
         if (!matchesResponse.ok) {
@@ -22,6 +24,10 @@ async function loadData() {
 
         const matches = await matchesResponse.json();
         const team = await teamResponse.json();
+        const openRequests = openRequestsResponse.ok ? await openRequestsResponse.json() : [];
+        const openRequestMap = new Map(
+            openRequests.map((item) => [Number(item.match_id), item.request_deadline_local])
+        );
 
         clubCrest.src = team.crest || TEAM_CREST;
         clubCrest.alt = team.name || "FC Barcelona";
@@ -34,43 +40,108 @@ async function loadData() {
             matchesGrid.innerHTML = '<div class="empty-state">No hi ha partits futurs programats.</div>';
             matchCount.textContent = "0 partits";
             summaryCards.innerHTML = "";
+            featuredMatchContainer.innerHTML = '<div class="empty-state">No hi ha partits amb horari confirmat i entrades obertes.</div>';
             return;
         }
 
-        renderSummary(upcoming, team);
-        renderMatches(upcoming, team);
+        const featuredMatch = upcoming.find(
+            (match) => match.status === "TIMED" && openRequestMap.has(Number(match.id))
+        );
+
+        const listMatches = featuredMatch
+            ? upcoming.filter((match) => match.id !== featuredMatch.id)
+            : upcoming;
+
+        renderFeaturedMatch(featuredMatch, team, openRequestMap);
+        renderSummary(featuredMatch || listMatches[0] || upcoming[0], listMatches, openRequestMap);
+        renderMatches(listMatches, team, openRequestMap);
+        matchCount.textContent = `${listMatches.length} partits`;
         updateCountdowns();
         setInterval(updateCountdowns, 60000);
     } catch (error) {
         matchesGrid.innerHTML = `<div class="empty-state">${error.message}</div>`;
+        featuredMatchContainer.innerHTML = `<div class="empty-state">${error.message}</div>`;
     }
 }
 
-function renderSummary(matches, team) {
-    const nextMatch = matches[0];
-    const nextDate = new Date(nextMatch.date);
+function renderFeaturedMatch(match, team, openRequestMap) {
+    if (!match) {
+        featuredMatchContainer.innerHTML = '<div class="empty-state">No hi ha partits amb horari confirmat i entrades obertes.</div>';
+        return;
+    }
+
+    const kickoff = new Date(match.date);
+    const deadline = openRequestMap.get(Number(match.id));
+    const deadlineValue = deadline ? formatLongDateTime(new Date(deadline)) : "Per confirmar";
+
+    featuredMatchContainer.innerHTML = `
+        <div class="featured-card">
+            <div class="featured-header">
+                <span class="featured-badge"><span class="featured-badge-icon">🏆</span>${match.league || "Primera Division"}</span>
+                <span class="featured-tag">Entrades obertes</span>
+            </div>
+
+            <div class="featured-teams">
+                <div class="featured-team">
+                    <img src="${team.crest || TEAM_CREST}" alt="${team.name || "FC Barcelona"}" />
+                    <span>${team.shortname || team.name || "Barça"}</span>
+                </div>
+                <div class="featured-vs">VS</div>
+                <div class="featured-team">
+                    <img src="${match.away_crest || TEAM_CREST}" alt="${match.away_name || "Rival"}" />
+                    <span>${match.away_shortname || match.away_name || "Rival"}</span>
+                </div>
+            </div>
+
+            <div class="featured-meta">
+                <div class="featured-box">
+                    <span class="label">Dia</span>
+                    <strong>${formatLongDate(kickoff)}</strong>
+                </div>
+                <div class="featured-box">
+                    <span class="label">Hora</span>
+                    <strong>${formatTime(kickoff)}</strong>
+                </div>
+                <div class="featured-box">
+                    <span class="label">Queda</span>
+                    <strong class="countdown-value" data-target="${kickoff.toISOString()}">${getCountdownText(kickoff)}</strong>
+                </div>
+            </div>
+
+            <div class="featured-deadline">
+                <span>Data límit per demanar entrades</span>
+                <strong>${deadlineValue}</strong>
+            </div>
+        </div>
+    `;
+}
+
+function renderSummary(match, listMatches, openRequestMap) {
+    const highlightMatch = match || listMatches[0];
+    if (!highlightMatch) {
+        summaryCards.innerHTML = "";
+        return;
+    }
 
     const cards = [
-        { label: "Pròxim", value: formatShortDate(nextDate) },
-        { label: "Rival", value: nextMatch.away_shortname || nextMatch.away_name },
-        { label: "Partits", value: `${matches.length}` }
+        { label: "Pròxim", value: formatShortDate(new Date(highlightMatch.date)) },
+        { label: "Rival", value: highlightMatch.away_shortname || highlightMatch.away_name },
+        { label: "Entrades", value: openRequestMap.size ? "Obertes" : "Tancades" }
     ];
 
     summaryCards.innerHTML = cards
         .map(
             (card) => `
-        <div class="summary-card">
-          <span class="label">${card.label}</span>
-          <strong>${card.value}</strong>
-        </div>
-      `
+                <div class="summary-card">
+                    <span class="label">${card.label}</span>
+                    <strong>${card.value}</strong>
+                </div>
+            `
         )
         .join("");
-
-    matchCount.textContent = `${matches.length} partits`;
 }
 
-function renderMatches(matches, team) {
+function renderMatches(matches, team, openRequestMap) {
     matchesGrid.innerHTML = "";
 
     matches.forEach((match) => {
@@ -87,8 +158,10 @@ function renderMatches(matches, team) {
         const awayCrest = card.querySelector(".team-block.away .team-crest");
 
         const kickoff = new Date(match.date);
+        const isTimed = match.status === "TIMED";
+        const hasOpenRequests = openRequestMap.has(Number(match.id));
 
-        status.textContent = match.status ? normalizeStatus(match.status) : "Programat";
+        status.textContent = isTimed ? "Horari confirmat" : normalizeStatus(match.status || "Programat");
         leagueTag.textContent = match.league || "Lliga";
         homeName.textContent = team.shortname || team.name || "Barça";
         awayName.textContent = match.away_shortname || match.away_name || "Rival";
@@ -98,8 +171,16 @@ function renderMatches(matches, team) {
         awayCrest.alt = match.away_name || "Rival";
 
         dateValue.textContent = formatLongDate(kickoff);
-        timeValue.textContent = formatTime(kickoff);
+        timeValue.textContent = isTimed ? formatTime(kickoff) : "Per confirmar";
         countdownValue.dataset.target = kickoff.toISOString();
+        countdownValue.textContent = isTimed ? getCountdownText(kickoff) : "Hora pendent";
+
+        if (hasOpenRequests) {
+            const badge = card.querySelector(".status-pill");
+            badge.textContent = "Entrades obertes";
+            badge.style.background = "rgba(83, 209, 141, 0.15)";
+            badge.style.color = "#53d18d";
+        }
 
         matchesGrid.appendChild(card);
     });
@@ -110,29 +191,30 @@ function updateCountdowns() {
 
     countdownEls.forEach((el) => {
         const target = new Date(el.dataset.target);
-        const diff = target.getTime() - Date.now();
-
-        if (diff <= 0) {
-            el.textContent = "Ja s’ha jugat";
-            return;
-        }
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-
-        if (days > 0) {
-            el.textContent = `${days}d ${hours}h`;
-            return;
-        }
-
-        if (hours > 0) {
-            el.textContent = `${hours}h ${minutes}m`;
-            return;
-        }
-
-        el.textContent = `${minutes}m`;
+        el.textContent = getCountdownText(target);
     });
+}
+
+function getCountdownText(date) {
+    const diff = new Date(date).getTime() - Date.now();
+
+    if (diff <= 0) {
+        return "Ja s’ha jugat";
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+
+    if (days > 0) {
+        return `${days}d ${hours}h`;
+    }
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+
+    return `${minutes}m`;
 }
 
 function formatLongDate(date) {
@@ -147,6 +229,16 @@ function formatShortDate(date) {
     return new Intl.DateTimeFormat("ca-ES", {
         day: "2-digit",
         month: "short"
+    }).format(date);
+}
+
+function formatLongDateTime(date) {
+    return new Intl.DateTimeFormat("ca-ES", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
     }).format(date);
 }
 

@@ -6,11 +6,22 @@ DATA_DIR = os.path.join(REPO_ROOT, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 
-def load_settings(path=None):
-    if path is None:
-        path = os.path.join(DATA_DIR, "settings.json")
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+def load_file(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except json.JSONDecodeError, FileNotFoundError:
+        return {}
+
+
+def load_settings():
+    path = os.path.join(DATA_DIR, "settings.json")
+    return load_file(path)
+
+
+def load_matches():
+    path = os.path.join(DATA_DIR, "matches.json")
+    return load_file(path)
 
 
 def save_data(data, filename, directory=DATA_DIR):
@@ -20,13 +31,12 @@ def save_data(data, filename, directory=DATA_DIR):
 
 
 def is_data_updated(new_data, filename, directory=DATA_DIR):
-    """Check if the new info is different from the existing info in the specified file"""
+    """Check if the new info is different from the existing info in the specified file."""
     path = os.path.join(directory, filename)
     if not os.path.exists(path):
         return True
-    with open(path, "r", encoding="utf-8") as f:
-        try:
-            existing_data = json.load(f)
-        except json.JSONDecodeError:
-            return True
+    try:
+        existing_data = load_file(path)
+    except json.JSONDecodeError:
+        return True
     return existing_data != new_data

@@ -9,10 +9,10 @@ const template = document.getElementById("matchCardTemplate");
 async function loadData() {
     try {
         const [matchesResponse, teamResponse, openRequestsResponse, competitionsResponse] = await Promise.all([
-            fetch("../data/matches.json"),
-            fetch("../data/fcb.json"),
-            fetch("../data/open_ticket_requests.json").catch(() => ({ ok: false })),
-            fetch("../data/competitions.json").catch(() => ({ ok: false }))
+            fetch("./data/matches.json"),
+            fetch("./data/fcb.json"),
+            fetch("./data/open_ticket_requests.json").catch(() => ({ ok: false })),
+            fetch("./data/competitions.json").catch(() => ({ ok: false }))
         ]);
 
         if (!matchesResponse.ok) {

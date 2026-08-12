@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Check open ticket request windows for Barça matches and map them to local fixtures."""
 
-import json
 import re
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
@@ -154,7 +153,6 @@ def main():
     matches = load_matches()
     status = check(url, matches)
     save_data(status, "open_ticket_requests.json")
-    print(json.dumps(status, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

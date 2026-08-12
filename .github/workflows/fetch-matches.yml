@@ -40,7 +40,7 @@ jobs:
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: bot/update-matches
+          branch: bot/update-data
           base: main
           title: "Update matches"
           commit-message: |
@@ -53,6 +53,6 @@ jobs:
           gh pr merge \
           --squash \
           --delete-branch \
-          bot/update-matches
+          bot/update-data
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

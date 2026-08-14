@@ -2,24 +2,26 @@
     {
         "id": "PD",
         "name": "La Liga EA Sports",
+        "shortname": "La Liga",
         "alias": "Primera Division",
         "crest": "https://crests.football-data.org/laliga.png"
     },
     {
         "id": "CDR",
         "name": "Copa del Rey",
-        "alias": "Copa del Rey",
+        "shortname": "Copa",
         "crest": "https://crests.football-data.org/CDR.svg"
     },
     {
         "id": "CL",
         "name": "UEFA Champions League",
+        "shortname": "Champions",
         "alias": "Champions League",
         "crest": "https://crests.football-data.org/CL.png"
     },
     {
         "id": "SB",
-        "name": "Spanish Super Cup",
+        "name": "Supercopa de España",
         "alias": "Supercopa",
         "crest": "https://crests.football-data.org/SB.svg"
     }

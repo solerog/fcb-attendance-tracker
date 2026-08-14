@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Propera jornada del Barça: partits futurs, rival, data i temps restant." />
-    <title>Barça | Pròxims partits</title>
+    <title>Seguiment assistència Camp Nou</title>
     <link rel="stylesheet" href="./styles.css" />
 </head>
 
@@ -16,21 +16,24 @@
                 <img id="clubCrest" src="" alt="Escut del FC Barcelona" />
                 <div>
                     <p class="eyebrow">FC Barcelona</p>
-                    <h1>Pròxims partits</h1>
+                    <h1>Seguiment assistència Camp Nou</h1>
                 </div>
             </div>
         </header>
 
         <main class="content">
             <section class="hero">
-                <div id="featuredMatch" class="featured-match" aria-live="polite"></div>
-                <div class="summary" id="summaryCards"></div>
+                <div class="section-header">
+                    <h3>Pròxims partits</h3>
+                    <span id="heroMatchCount" class="match-count">0 partits</span>
+                </div>
+                <div id="featuredMatch" class="featured-match matches-grid" aria-live="polite"></div>
             </section>
 
             <section class="matches-section">
                 <div class="section-header">
-                    <h3>Calendari</h3>
-                    <span id="matchCount" class="match-count">0 partits</span>
+                    <h3>Resta del calendari</h3>
+                    <span id="calendarMatchCount" class="match-count">0 partits</span>
                 </div>
                 <div id="matchesGrid" class="matches-grid" aria-live="polite"></div>
             </section>

@@ -3,7 +3,7 @@
 
 import os
 
-from utils.helper import is_data_updated, load_settings, save_data
+from utils.helper import is_dict_updated, load_settings, save_data
 from utils.url import FootballDataClient
 
 
@@ -30,7 +30,7 @@ def main():
         print("Please set team_id and season in data/settings.json")
         return
     team_info = fetch(team_id, season, api_key)
-    updated = is_data_updated(team_info, "fcb.json")
+    updated = is_dict_updated(team_info, "fcb.json")
     if updated:
         save_data(team_info, "fcb.json")
         print("Saved team info to data/fcb.json")

@@ -27,7 +27,7 @@ body {
     min-height: 100vh;
     font-family: Inter, "Segoe UI", sans-serif;
     background: #911a04;
-    background: linear-gradient(150deg, rgba(145, 26, 4, 1) 1%, rgba(10, 65, 143, 1) 17%, rgba(1, 47, 150, 1) 83%, rgba(179, 34, 53, 1) 100%);
+    background: linear-gradient(150deg, rgba(145, 26, 4, 1) 1%, rgba(10, 65, 143, 1) 12%, rgba(1, 47, 150, 1) 88%, rgba(179, 34, 53, 1) 100%);
     color: var(--text);
 }
 
@@ -85,12 +85,11 @@ img {
 
 .hero {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 18px;
-    padding: 30px;
-    background: rgba(255, 255, 255, 0.04);
+    grid-template-columns: 1fr;
+    padding: 20px;
+    background: rgba(102, 0, 255, 0.2);
     border: 1px solid var(--card-border);
-    border-radius: 26px;
+    border-radius: 20px;
     backdrop-filter: blur(12px);
     box-shadow: var(--shadow);
 }
@@ -107,38 +106,19 @@ img {
     line-height: 1.6;
 }
 
-.summary {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(100px, 1fr));
-    gap: 14px;
-    align-content: center;
+.hero .section-header {
+    grid-column: 1 / -1;
 }
 
-.summary-card {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--card-border);
-    padding: 18px 16px;
-    border-radius: 18px;
-}
-
-.summary-card .label {
-    display: block;
-    color: var(--muted);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 8px;
-}
-
-.summary-card strong {
-    font-size: clamp(1.2rem, 2vw, 1.8rem);
+.hero {
+    grid-template-columns: 1fr;
 }
 
 .matches-section {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(102, 0, 255, 0.2);
     border: 1px solid var(--card-border);
-    border-radius: 24px;
-    padding: 24px;
+    border-radius: 20px;
+    padding: 20px;
 }
 
 .section-header {

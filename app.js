@@ -1,7 +1,7 @@
 const TEAM_CREST = "https://crests.football-data.org/81.png";
 const matchesGrid = document.getElementById("matchesGrid");
-const summaryCards = document.getElementById("summaryCards");
-const matchCount = document.getElementById("matchCount");
+const heroMatchCount = document.getElementById("heroMatchCount");
+const calendarMatchCount = document.getElementById("calendarMatchCount");
 const clubCrest = document.getElementById("clubCrest");
 const featuredMatchContainer = document.getElementById("featuredMatch");
 const template = document.getElementById("matchCardTemplate");
@@ -33,7 +33,7 @@ async function loadData() {
         );
 
         const competitionsMap = new Map(
-            competitions.map((comp) => [comp.id, comp])
+            competitions.map((comp) => [String(comp.id).toUpperCase(), comp])
         );
 
         clubCrest.src = team.crest || TEAM_CREST;
@@ -45,24 +45,19 @@ async function loadData() {
 
         if (!upcoming.length) {
             matchesGrid.innerHTML = '<div class="empty-state">No hi ha partits futurs programats.</div>';
-            matchCount.textContent = "0 partits";
-            summaryCards.innerHTML = "";
-            featuredMatchContainer.innerHTML = '<div class="empty-state">No hi ha partits amb horari confirmat i entrades obertes.</div>';
+            heroMatchCount.textContent = "0 partits";
+            calendarMatchCount.textContent = "0 partits";
+            featuredMatchContainer.innerHTML = '<div class="empty-state">No hi ha partits amb entrades obertes o demanades.</div>';
             return;
         }
 
-        const featuredMatch = upcoming.find(
-            (match) => match.status === "TIMED" && openRequestMap.has(Number(match.id))
-        );
+        const openRequestedMatches = upcoming.filter((match) => openRequestMap.has(Number(match.id)));
+        const listMatches = upcoming.filter((match) => !openRequestMap.has(Number(match.id)));
 
-        const listMatches = featuredMatch
-            ? upcoming.filter((match) => match.id !== featuredMatch.id)
-            : upcoming;
-
-        renderFeaturedMatch(featuredMatch, team, openRequestMap, competitionsMap);
-        renderSummary(featuredMatch || listMatches[0] || upcoming[0], listMatches, openRequestMap, competitionsMap);
+        renderFeaturedMatch(openRequestedMatches, team, openRequestMap, competitionsMap);
         renderMatches(listMatches, team, openRequestMap, competitionsMap);
-        matchCount.textContent = `${listMatches.length} partits`;
+        heroMatchCount.textContent = `${openRequestedMatches.length} partits`;
+        calendarMatchCount.textContent = `${listMatches.length} partits`;
         updateCountdowns();
         setInterval(updateCountdowns, 60000);
     } catch (error) {
@@ -71,85 +66,66 @@ async function loadData() {
     }
 }
 
-function renderFeaturedMatch(match, team, openRequestMap, competitionsMap) {
-    if (!match) {
-        featuredMatchContainer.innerHTML = '<div class="empty-state">No hi ha partits amb horari confirmat i entrades obertes.</div>';
+function renderFeaturedMatch(matches, team, openRequestMap, competitionsMap) {
+    if (!matches.length) {
+        featuredMatchContainer.innerHTML = '<div class="empty-state">No hi ha partits futurs amb entrades obertes o demanades.</div>';
         return;
     }
 
-    const competition = competitionsMap.get(match.competition_id) || {};
-    const competitionAlias = competition.alias || competition.name || "Competició";
-    const competitionCrest = competition.crest || "";
+    featuredMatchContainer.innerHTML = matches
+        .map((match) => {
+            const competitionKey = String(match.competition_code || match.competition_id || "").toUpperCase();
+            const competition = competitionsMap.get(competitionKey) || {};
+            const competitionName = competition.name || competition.alias || "Competició";
+            const competitionCrest = competition.crest || "";
 
-    const kickoff = new Date(match.date);
-    const deadline = openRequestMap.get(Number(match.id));
-    const deadlineValue = deadline ? formatLongDateTime(new Date(deadline)) : "Per confirmar";
+            const kickoff = new Date(match.date);
+            const deadline = openRequestMap.get(Number(match.id));
+            const deadlineValue = deadline ? formatLongDateTime(new Date(deadline)) : "Per confirmar";
 
-    featuredMatchContainer.innerHTML = `
-        <div class="featured-card">
-            <div class="featured-header">
-                ${competitionCrest ? `<img src="${competitionCrest}" alt="${competitionAlias}" class="featured-comp-crest" />` : ""}
-                <span class="featured-badge"><span class="featured-badge-icon">🏆</span>${competitionAlias}</span>
-                <span class="featured-tag">Entrades obertes</span>
-            </div>
+            return `
+                <div class="featured-card">
+                    <div class="featured-header">
+                        <span class="featured-badge">
+                        ${competitionCrest ? `<img src="${competitionCrest}" alt="${competitionName}" class="featured-comp-crest" />` : `<span class="featured-badge-icon">🏆</span>`}
+                        ${competitionName}</span>
+                        <span class="featured-tag">Entrades obertes</span>
+                    </div>
 
-            <div class="featured-teams">
-                <div class="featured-team">
-                    <img src="${team.crest || TEAM_CREST}" alt="${team.name || "FC Barcelona"}" />
-                    <span>${team.shortname || team.name || "Barça"}</span>
+                    <div class="featured-teams">
+                        <div class="featured-team">
+                            <img src="${team.crest || TEAM_CREST}" alt="${team.name || "FC Barcelona"}" />
+                            <span>${team.shortname || team.name || "Barça"}</span>
+                        </div>
+                        <div class="featured-vs">VS</div>
+                        <div class="featured-team">
+                            <img src="${match.away_crest || TEAM_CREST}" alt="${match.away_name || "Rival"}" />
+                            <span>${match.away_shortname || match.away_name || "Rival"}</span>
+                        </div>
+                    </div>
+
+                    <div class="featured-meta">
+                        <div class="featured-box">
+                            <span class="label">Dia</span>
+                            <strong>${formatLongDate(kickoff)}</strong>
+                        </div>
+                        <div class="featured-box">
+                            <span class="label">Hora</span>
+                            <strong>${formatTime(kickoff)}</strong>
+                        </div>
+                        <div class="featured-box">
+                            <span class="label">Queda</span>
+                            <strong class="countdown-value" data-target="${kickoff.toISOString()}">${getCountdownText(kickoff)}</strong>
+                        </div>
+                    </div>
+
+                    <div class="featured-deadline">
+                        <span>Data límit per demanar entrades</span>
+                        <strong>${deadlineValue}</strong>
+                    </div>
                 </div>
-                <div class="featured-vs">VS</div>
-                <div class="featured-team">
-                    <img src="${match.away_crest || TEAM_CREST}" alt="${match.away_name || "Rival"}" />
-                    <span>${match.away_shortname || match.away_name || "Rival"}</span>
-                </div>
-            </div>
-
-            <div class="featured-meta">
-                <div class="featured-box">
-                    <span class="label">Dia</span>
-                    <strong>${formatLongDate(kickoff)}</strong>
-                </div>
-                <div class="featured-box">
-                    <span class="label">Hora</span>
-                    <strong>${formatTime(kickoff)}</strong>
-                </div>
-                <div class="featured-box">
-                    <span class="label">Queda</span>
-                    <strong class="countdown-value" data-target="${kickoff.toISOString()}">${getCountdownText(kickoff)}</strong>
-                </div>
-            </div>
-
-            <div class="featured-deadline">
-                <span>Data límit per demanar entrades</span>
-                <strong>${deadlineValue}</strong>
-            </div>
-        </div>
-    `;
-}
-
-function renderSummary(match, listMatches, openRequestMap, competitionsMap) {
-    const highlightMatch = match || listMatches[0];
-    if (!highlightMatch) {
-        summaryCards.innerHTML = "";
-        return;
-    }
-
-    const cards = [
-        { label: "Pròxim", value: formatShortDate(new Date(highlightMatch.date)) },
-        { label: "Rival", value: highlightMatch.away_shortname || highlightMatch.away_name },
-        { label: "Entrades", value: openRequestMap.size ? "Obertes" : "Tancades" }
-    ];
-
-    summaryCards.innerHTML = cards
-        .map(
-            (card) => `
-                <div class="summary-card">
-                    <span class="label">${card.label}</span>
-                    <strong>${card.value}</strong>
-                </div>
-            `
-        )
+            `;
+        })
         .join("");
 }
 
@@ -169,15 +145,16 @@ function renderMatches(matches, team, openRequestMap, competitionsMap) {
         const homeCrest = card.querySelector(".team-block.home .team-crest");
         const awayCrest = card.querySelector(".team-block.away .team-crest");
 
-        const competition = competitionsMap.get(match.competition_id) || {};
-        const competitionAlias = competition.alias || competition.name || "Competició";
+        const competitionKey = String(match.competition_code || match.competition_id || "").toUpperCase();
+        const competition = competitionsMap.get(competitionKey) || {};
+        const competitionName = competition.name || competition.alias || "Competició";
 
         const kickoff = new Date(match.date);
         const isTimed = match.status === "TIMED";
         const hasOpenRequests = openRequestMap.has(Number(match.id));
 
         status.textContent = isTimed ? "Horari confirmat" : normalizeStatus(match.status || "Programat");
-        leagueTag.textContent = competitionAlias;
+        leagueTag.textContent = competitionName;
         homeName.textContent = team.shortname || team.name || "Barça";
         awayName.textContent = match.away_shortname || match.away_name || "Rival";
         homeCrest.src = team.crest || TEAM_CREST;

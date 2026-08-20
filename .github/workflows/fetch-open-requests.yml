@@ -1,0 +1,33 @@
+name: 3. Fetch Open Requests
+
+on:
+  schedule:
+    # 4 cops al dia durant el dia: 08:00, 13:00, 17:00 i 21:00 UTC
+    - cron: "0 8,13,17,21 * * *"
+  workflow_dispatch:
+
+jobs:
+  check-open-requests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositori
+        uses: actions/checkout@v7
+
+      - name: Instal·lar uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Configurar Python
+        run: uv python install
+
+      - name: Instal·lar dependències
+        run: uv sync --frozen
+
+      - name: Executar fetch_open_requests
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: uv run python -m actions.fetch_open_requests

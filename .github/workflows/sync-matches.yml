@@ -1,0 +1,35 @@
+name: 1. Sync Matches
+
+on:
+  schedule:
+    # 2 cops al dia: 07:00 i 19:00 UTC
+    - cron: "0 7,19 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync-matches:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositori
+        uses: actions/checkout@v7
+
+      - name: Instal·lar uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Configurar Python
+        run: uv python install
+
+      - name: Instal·lar dependències
+        run: uv sync --frozen
+
+      - name: Executar fetch_matches
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+          HOME_TEAM_ID: ${{ secrets.HOME_TEAM_ID }}
+        run: uv run python -m actions.fetch_matches

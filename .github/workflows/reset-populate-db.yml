@@ -1,0 +1,29 @@
+name: 4. Reset and Populate Database
+
+on:
+  workflow_dispatch:
+
+jobs:
+  reset-db:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositori
+        uses: actions/checkout@v7
+
+      - name: Instal·lar uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Configurar Python
+        run: uv python install
+
+      - name: Instal·lar dependències
+        run: uv sync --frozen
+
+      - name: Executar reset_db
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: uv run python reset_db.py

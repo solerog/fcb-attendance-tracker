@@ -503,12 +503,11 @@ button:disabled {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    white-space: nowrap;
 
-    min-width: 30px;
+    min-width: max-content;
     height: 30px;
-
     padding: 0 9px;
-
     border: 1px solid var(--border);
     border-radius: var(--radius-small);
 
@@ -700,15 +699,14 @@ button:disabled {
 .ticket-status {
     display: inline-flex;
     align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
 
     margin-top: 20px;
-
     padding: 6px 10px;
-
     border-radius: 8px;
 
     background: var(--surface-light);
-
     color: var(--text-secondary);
 
     font-size: 0.72rem;
@@ -716,16 +714,14 @@ button:disabled {
 }
 
 
-.ticket-status.is-open {
+.ticket-status.is-requested {
     background: var(--green-soft);
-
     color: #86efac;
 }
 
 
-.ticket-status.is-requested {
+.ticket-status.is-open {
     background: var(--orange-soft);
-
     color: #fcd34d;
 }
 
@@ -1347,7 +1343,7 @@ button:disabled {
     }
 
     .section-header {
-        align-items: flex-start;
+        align-items: flex-end;
     }
 
     .section-header h2 {
@@ -1359,10 +1355,6 @@ button:disabled {
             66px minmax(0, 1fr);
 
         gap: 10px;
-    }
-
-    .match-row> :last-child {
-        display: none;
     }
 
     .matches-grid {
@@ -1380,7 +1372,6 @@ button:disabled {
     .login-card {
         padding: 30px 24px;
     }
-
 }
 
 
@@ -1502,6 +1493,14 @@ button:disabled {
     gap: 12px;
     padding-top: 14px;
     border-top: 1px solid rgba(38, 50, 72, 0.72);
+}
+
+.match-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 0.5rem;
 }
 
 .match-card-footer .ticket-status {
@@ -1687,7 +1686,7 @@ button:disabled {
 
     .match-card-footer {
         align-items: flex-start;
-        flex-direction: column;
+        flex-direction: row;
     }
 
     .attendance-selectors {
@@ -1739,10 +1738,9 @@ button:disabled {
 
     .match-row-team {
         flex-direction: column;
+        text-align: center;
 
         gap: 5px;
-
-        text-align: center;
     }
 
     .match-row-team:first-child,
@@ -1768,18 +1766,15 @@ button:disabled {
 
     .match-row-info {
         grid-column: 2;
-
         flex-direction: row;
-
         align-items: center;
-
         flex-wrap: wrap;
 
         gap: 8px;
     }
 
     .match-row-competition {
-        min-width: 0;
+        min-width: max-content;
     }
 
     .competition-emblem {
@@ -1789,7 +1784,7 @@ button:disabled {
 }
 
 .edit-match-button {
-    padding: 7px 11px;
+    padding: 6px 10px;
     border: 1px solid var(--border-strong);
     border-radius: 8px;
     background: var(--border-light);
@@ -1798,6 +1793,7 @@ button:disabled {
     font-size: 0.75rem;
     font-weight: 700;
     white-space: nowrap;
+    flex-shrink: 0;
     cursor: pointer;
     transition:
         border-color 0.15s ease,

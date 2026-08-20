@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Seguiment assistència Camp Nou</title>
+
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- LOGIN -->
+    <main id="login-screen" class="login-screen">
+        <section class="login-card">
+            <div class="login-header">
+                <h1>Seguiment assistència Camp Nou</h1>
+
+                <p>
+                    Inicia sessió per gestionar les assistències.
+                </p>
+            </div>
+
+            <form id="login-form" method="post" autocomplete="on" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="email">
+                        Correu electrònic
+                    </label>
+
+                    <input type="email" id="email" name="email" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        Contrasenya
+                    </label>
+
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+
+                <p id="login-error" class="login-error" hidden></p>
+
+                <button type="submit" id="login-button" class="primary-button">
+                    Iniciar sessió
+                </button>
+            </form>
+        </section>
+    </main>
+
+
+    <!-- =========================
+         APPLICATION
+    ========================== -->
+
+    <div id="app-screen" class="hidden">
+
+        <!-- =====================
+             NAVBAR
+        ====================== -->
+
+        <header class="topbar">
+
+            <div class="topbar-content">
+
+                <div class="brand">
+
+                    <img class="brand-icon" src="./favicon.ico" alt="">
+
+                    <span>
+                        Seguiment assistència Camp Nou
+                    </span>
+
+                </div>
+
+
+                <nav class="navigation">
+
+                    <a href="#upcoming">
+                        Propers
+                    </a>
+
+                    <a href="#calendar">
+                        Calendari
+                    </a>
+
+                    <a href="#stats">
+                        Stats
+                    </a>
+
+                    <a href="#past">
+                        Anteriors
+                    </a>
+
+                </nav>
+
+
+                <div class="nav-actions">
+
+                    <span id="user-email" class="user-email"></span>
+
+                    <button id="logout-button" class="logout-button" type="button">
+                        Sortir
+                    </button>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- =====================
+             MAIN
+        ====================== -->
+
+        <main class="container">
+
+
+            <!-- =================
+                 PROPERS PARTITS
+            ================== -->
+
+            <section id="upcoming" class="section">
+
+                <div class="section-header">
+
+                    <div>
+
+                        <p class="section-eyebrow">
+                            Properament
+                        </p>
+
+                        <h2>
+                            Partits oberts
+                        </h2>
+
+                    </div>
+
+                    <span id="upcoming-count" class="count-badge">
+                        0
+                    </span>
+
+                </div>
+
+
+                <div id="upcoming-matches" class="matches-grid">
+
+                    <div class="loading">
+                        Carregant partits...
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================
+                 CALENDARI
+            ================== -->
+
+            <section id="calendar" class="section">
+
+                <div class="section-header">
+
+                    <div>
+
+                        <p class="section-eyebrow">
+                            Resta de la temporada
+                        </p>
+
+                        <h2>
+                            Calendari
+                        </h2>
+
+                    </div>
+
+
+                    <label class="toggle-control">
+                        <span class="toogle-info">
+                            <span class="toggle-label">
+                                Tots
+                            </span>
+                            <input id="home-only-toggle" type="checkbox">
+                            <span class="toggle-label">
+                                Casa
+                            </span>
+                        </span>
+                        <span id="calendar-count" class="count-badge">
+                            0
+                        </span>
+                    </label>
+
+                </div>
+
+
+                <div id="calendar-matches" class="matches-list">
+                    <div class="loading">
+                        Carregant calendari...
+                    </div>
+                </div>
+
+
+                <div class="load-more-container">
+
+                    <button id="calendar-load-more" class="secondary-button" type="button" hidden>
+                        Carregar-ne més
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================
+                 ESTADÍSTIQUES
+            ================== -->
+
+            <section id="stats" class="section">
+
+                <div class="section-header">
+
+                    <div>
+
+                        <p class="section-eyebrow">
+                            Resum
+                        </p>
+
+                        <h2>
+                            Estadístiques
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div id="stats-summary" class="stats-grid">
+
+                    <div class="loading">
+                        Carregant estadístiques...
+                    </div>
+
+                </div>
+
+
+                <div id="stats-attendance" class="stats-attendance"></div>
+
+            </section>
+
+
+            <!-- =================
+                 PARTITS ANTERIORS
+            ================== -->
+
+            <section id="past" class="section">
+
+                <div class="section-header">
+
+                    <div>
+
+                        <p class="section-eyebrow">
+                            Historial
+                        </p>
+
+                        <h2>
+                            Partits anteriors
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div id="past-matches" class="matches-list">
+
+                    <div class="loading">
+                        Carregant partits...
+                    </div>
+
+                </div>
+
+
+                <div class="load-more-container">
+
+                    <button id="past-load-more" class="secondary-button" type="button" hidden>
+                        Carregar-ne més
+                    </button>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =========================
+         SUPABASE
+    ========================== -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Configuració local -->
+    <script src="./config.js"></script>
+
+    <!-- Aplicació -->
+    <script src="./app.js"></script>
+
+</body>
+
+</html>

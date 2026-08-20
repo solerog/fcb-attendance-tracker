@@ -3,14 +3,14 @@ name = "fcb-attendance-tracker"
 version = "0.1.0"
 description = "FC Barcelona attendance tracker"
 readme = "README.md"
-authors = [
-    { name = "Roger Sole", email = "rogersolesotillo@gmail.com" }
-]
+authors = [{ name = "Roger Sole", email = "rogersolesotillo@gmail.com" }]
 requires-python = ">=3.14"
 dependencies = [
     "requests>=2.28",
     "beautifulsoup4>=4.12",
-    "python-dotenv>=1.0"
+    "python-dotenv>=1.0",
+    "supabase>=2.31.0",
+    "psycopg[binary]>=3.3.4",
 ]
 
 [project.scripts]

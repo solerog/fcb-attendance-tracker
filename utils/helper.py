@@ -14,14 +14,21 @@ def load_file(path):
         return {}
 
 
-def load_settings():
-    path = os.path.join(DATA_DIR, "settings.json")
+def load_data_dir_file(filename: str):
+    path = os.path.join(DATA_DIR, filename)
     return load_file(path)
+
+
+def load_settings():
+    return load_data_dir_file("settings.json")
 
 
 def load_matches():
-    path = os.path.join(DATA_DIR, "matches.json")
-    return load_file(path)
+    return load_data_dir_file("matches.json")
+
+
+def load_people():
+    return load_data_dir_file("people.json")
 
 
 def save_data(data, filename, directory=DATA_DIR):

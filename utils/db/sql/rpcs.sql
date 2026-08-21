@@ -44,7 +44,8 @@ begin
     ('PD', 'Primera Division', 'La Liga', 'https://crests.football-data.org/laliga.png'),
     ('CL', 'UEFA Champions League', 'Champions', 'https://crests.football-data.org/CL.png'),
     ('CDR', 'Copa Del Rey', 'Copa', 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Copa_Del_Rey_Official_Logo.png'),
-    ('SDE', 'Supercopa de España', 'Supercopa', 'https://es.wikipedia.org/wiki/Archivo:Supercopa_de_Espa%C3%B1a_Logo.png'),
+    ('SDE', 'Supercopa de España', 'Supercopa', 'https://es.wikipedia.org/wiki/Archivo:Supercopa_de_Espa%C3%B1a_Logo.png')
+  on conflict do nothing;
 
   return '✅ Base de dades poblada correctament';
 end;

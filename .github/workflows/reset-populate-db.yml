@@ -26,4 +26,4 @@ jobs:
       - name: Executar reset_db
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: uv run python utils.db.reset_db.py
+        run: uv run python -m utils.db.reset_db.py

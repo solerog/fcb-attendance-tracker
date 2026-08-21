@@ -72,6 +72,7 @@ create table matches (
     matchday smallint,
     tickets_open boolean not null default false,
     tickets_requested boolean not null default false,
+    request_deadline timestamptz,
     constraint different_teams
         check (home_team_id <> away_team_id)
 );

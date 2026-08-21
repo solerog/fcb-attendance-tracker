@@ -12,6 +12,7 @@ select
     m.matchday,
     m.tickets_open,
     m.tickets_requested,
+    m.request_deadline,
 
     c.code as competition_code,
     c.name as competition_name,

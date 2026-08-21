@@ -159,7 +159,7 @@ def check_open_requests(url: str, fixtures: list[MatchRow]) -> list[dict[str, An
 
 
 def main() -> None:
-    home_team_id = int(os.environ.get("HOME_TEAM_ID", 81))
+    home_team_id = int(os.environ.get("HOME_TEAM_ID", "81"))
 
     # 1. Obtenir configuració de la temporada actual amb open_requests_url
     settings_res = (

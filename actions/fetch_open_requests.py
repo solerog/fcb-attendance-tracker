@@ -59,7 +59,7 @@ def match_fixture(
         return None
 
     fixture_iso = best_match.get("date", "")
-    fixture_dt = datetime.fromisoformat(fixture_iso).astimezone(UTC)
+    fixture_dt = datetime.fromisoformat(fixture_iso).astimezone(LOCAL_TZ)
     is_time_correct = abs((page_dt_utc - fixture_dt).total_seconds()) <= 1800
 
     return {
@@ -67,7 +67,7 @@ def match_fixture(
         "away_name": best_match.get("away_team_name"),
         "away_shortname": best_match.get("away_team_shortname"),
         "fixture_date_utc": fixture_iso,
-        "fixture_date_local": fixture_dt.astimezone(LOCAL_TZ).isoformat(),
+        "fixture_date_local": fixture_dt.isoformat(),
         "page_match_datetime_local": page_dt.isoformat(),
         "page_match_datetime_utc": page_dt_utc.isoformat(),
         "is_time_correct": is_time_correct,
@@ -204,12 +204,19 @@ def main() -> None:
         match_id = req["match_id"]
         deadline = req["request_deadline"]
 
-        if match_id and deadline:
-            supabase.table("matches").update({"request_deadline": deadline}).eq(
-                "id", match_id
-            ).execute()
-            updated_count += 1
-            print(f"  ✅ Termini actualitzat per al partit ID {match_id}: {deadline}")
+        if not match_id:
+            continue
+
+        update_dict = {"tickets_open": True}
+
+        if deadline:
+            update_dict.update({"request_deadline": deadline})
+
+        supabase.table("matches").update(update_dict).eq("id", match_id).execute()
+        updated_count += 1
+        print(
+            f"  ✅ Entrades obertes i termini actualitzats per al partit ID {match_id}"
+        )
 
     print(
         f"✨ S'han processat {len(open_requests)} sol·licituds ({updated_count} partits actualitzats)."

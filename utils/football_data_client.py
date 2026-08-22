@@ -1,4 +1,6 @@
-from urllib.parse import urljoin
+import types
+from datetime import date, datetime
+from typing import Any, Self
 
 import requests
 
@@ -8,69 +10,49 @@ class FootballDataClient:
 
     DEFAULT_BASE_URL = "https://api.football-data.org/v4"
 
-    def __init__(
-        self,
-        api_key: str,
-        base_url: str = DEFAULT_BASE_URL,
-        timeout: int = 30,
-    ):
-        self.base_url = base_url.rstrip("/")
-        self.timeout = timeout
-
+    def __init__(self, api_key: str) -> None:
+        self.api_key = api_key
         self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "X-Auth-Token": api_key,
-            }
-        )
+        self.session.headers.update({"X-Auth-Token": self.api_key})
 
-    def get(
-        self,
-        endpoint: str,
-        params: dict | None = None,
-    ) -> dict:
-        endpoint = endpoint.lstrip("/")
-
-        url = urljoin(
-            f"{self.base_url}/",
-            endpoint,
-        )
-
-        response = self.session.get(
-            url,
-            params=params,
-            timeout=self.timeout,
-        )
-
-        response.raise_for_status()
-
-        return response.json()
-
-    def get_team_info(
-        self,
-        team_id: int,
-        season: int,
-    ) -> dict:
-        return self.get(
-            f"teams/{team_id}",
-            {"season": season},
-        )
-
-    def get_team_matches(
-        self,
-        team_id: int,
-        season: int,
-    ) -> dict:
-        return self.get(
-            f"teams/{team_id}/matches",
-            {"season": season},
-        )
-
-    def close(self) -> None:
-        self.session.close()
-
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
+        self.session.close()
+
+    def get(
+        self, endpoint: str, params: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        url = f"{self.DEFAULT_BASE_URL}/{endpoint.lstrip('/')}"
+        response = self.session.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        return response.json()
+
+    def get_team_matches_date(
+        self,
+        team_id: int,
+        date_from: str | date | datetime,
+        date_to: str | date | datetime,
+    ) -> dict[str, Any]:
+        """Obté els partits d'un equip dins del rang exacte de dates."""
+        date_from_str = (
+            date_from.strftime("%Y-%m-%d")
+            if isinstance(date_from, (date, datetime))
+            else str(date_from)
+        )
+        date_to_str = (
+            date_to.strftime("%Y-%m-%d")
+            if isinstance(date_to, (date, datetime))
+            else str(date_to)
+        )
+
+        return self.get(
+            f"teams/{team_id}/matches",
+            {"dateFrom": date_from_str, "dateTo": date_to_str},
+        )

@@ -73,7 +73,7 @@ def reset_and_populate_database() -> None:
         conn.close()
 
     print("\n📦 Afegint partits, equips i competicions...")
-    sync_matches()
+    sync_matches(True)
 
     print("\n✨ Base de dades reinicialitzada i poblada amb èxit!")
 

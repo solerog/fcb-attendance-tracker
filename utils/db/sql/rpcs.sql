@@ -1,14 +1,18 @@
---drop function populate_db();
 create or replace function populate_db ()
 returns text
 language plpgsql
 as $$
+declare
+  v_count integer;
 begin
+
   insert into seasons (id, name)
   values
     (2026, '2026/27'),
     (2025, '2025/26')
   on conflict do nothing;
+  get diagnostics v_count = row_count;
+  raise notice '  📅 Temporades processades (% noves files inserides)', v_count;
 
   insert into people (id, name, first_surname, second_surname, email, description, clau_soci)
   values
@@ -17,27 +21,35 @@ begin
     (3, 'Xavier', 'Solé', 'Palacín', 'fxavsp@gmail.com', null, 78670),
     (4, 'Roger', 'Solé', 'Sotillo', 'rogersolesotillo@gmail.com', null, 174260),
     (5, 'Marisa', 'Solé', 'Palacín', null, null, 34205),
-    (6, 'Sara', 'Pascual', 'Luna',null, null, null),
-    (7, 'Iolanda', 'Sotillo', 'Sáez',null, null, null),
+    (6, 'Sara', 'Pascual', 'Luna', null, null, null),
+    (7, 'Iolanda', 'Sotillo', 'Sáez', null, null, null),
     (8, 'Sergi', 'Solé', 'Palacín', null, 'Gran', null)
   on conflict do nothing;
+  get diagnostics v_count = row_count;
+  raise notice '  👤 Persones processades (% noves files inserides)', v_count;
 
   insert into seats (id, owner_id)
   values
-  (1, 3),
-  (2, 4),
-  (3, 5)
+    (1, 3),
+    (2, 4),
+    (3, 5)
   on conflict do nothing;
+  get diagnostics v_count = row_count;
+  raise notice '  💺 Seients processats (% noves files inserides)', v_count;
 
   insert into teams (id, name, shortname, tla)
   values (81, 'FC Barcelona', 'Barça', 'FCB')
   on conflict do nothing;
+  get diagnostics v_count = row_count;
+  raise notice '  ⚽ Equips processats (% noves files inserides)', v_count;
 
   insert into settings (home_team_id, season_id, open_requests_url) 
   values
-  (81, 2026, 'https://www.fcbarcelona.cat/ca/fitxa/4510674'),
-  (81, 2025, null)
+    (81, 2026, 'https://www.fcbarcelona.cat/ca/fitxa/4510674'),
+    (81, 2025, null)
   on conflict do nothing;
+  get diagnostics v_count = row_count;
+  raise notice '  ⚙️ Configuració processada (% noves files inserides)', v_count;
 
   insert into competitions (code, name, shortname, emblem)
   values
@@ -46,6 +58,8 @@ begin
     ('CDR', 'Copa Del Rey', 'Copa', 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Copa_Del_Rey_Official_Logo.png'),
     ('SDE', 'Supercopa de España', 'Supercopa', 'https://es.wikipedia.org/wiki/Archivo:Supercopa_de_Espa%C3%B1a_Logo.png')
   on conflict do nothing;
+  get diagnostics v_count = row_count;
+  raise notice '🏆 Competicions processades (% noves files inserides)', v_count;
 
   return '✅ Base de dades poblada correctament';
 end;

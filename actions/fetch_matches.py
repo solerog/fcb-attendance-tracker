@@ -1,6 +1,13 @@
+#!/usr/bin/env python3
+"""Sincronitza els partits des de Football-Data cap a Supabase utilitzant rangs de dates (15-Jul al 14-Jul)."""
+
+import argparse
 import os
 from dataclasses import dataclass
-from typing import cast
+from datetime import UTC, date, datetime
+from typing import Any, cast
+
+from dotenv import load_dotenv
 
 from utils.db.supabase import supabase
 from utils.football_data_client import FootballDataClient
@@ -10,6 +17,8 @@ from utils.types import (
     SettingsRow,
     TeamDict,
 )
+
+load_dotenv()
 
 
 @dataclass(frozen=True)
@@ -27,7 +36,7 @@ def get_settings(home_team_id: int) -> list[Settings]:
         .execute()
     )
 
-    rows = cast(list[SettingsRow], response.data)
+    rows = cast(list[SettingsRow], response.data or [])
 
     return [
         Settings(
@@ -38,60 +47,61 @@ def get_settings(home_team_id: int) -> list[Settings]:
     ]
 
 
-def build_competitions(
-    raw_matches: list[dict],
-) -> list[CompetitionDict]:
+def get_season_dates(season_id: int) -> tuple[date, date]:
+    """Retorna l'inici (15 de juliol) i final (14 de juliol de l'any següent)."""
+    return date(season_id, 7, 15), date(season_id, 7, 14).replace(year=season_id + 1)
+
+
+def get_season_id_for_date(match_date_str: str, settings_list: list[Settings]) -> int:
+    """Calcula el season_id d'un partit a partir de la seva data."""
+    match_dt = datetime.fromisoformat(match_date_str)
+    match_date = match_dt.date()
+
+    for s in settings_list:
+        d_from, d_to = get_season_dates(s.season_id)
+        if d_from <= match_date <= d_to:
+            return s.season_id
+
+    # Per defecte si no encaixa exactament
+    return match_dt.year if match_dt.month >= 7 else match_dt.year - 1
+
+
+def build_competitions(raw_matches: list[dict[str, Any]]) -> list[CompetitionDict]:
     competitions: dict[str, CompetitionDict] = {}
-
     for match in raw_matches:
-        competition = match["competition"]
-        code = competition["code"]
-
-        if code in competitions:
-            continue
-
-        competitions[code] = {
-            "code": code,
-            "name": competition["name"],
-            "emblem": competition.get("emblem"),
-        }
-
+        comp = match["competition"]
+        code = comp["code"]
+        if code not in competitions:
+            competitions[code] = {
+                "code": code,
+                "name": comp["name"],
+                "emblem": comp.get("emblem"),
+            }
     return list(competitions.values())
 
 
-def build_teams(
-    raw_matches: list[dict],
-) -> list[TeamDict]:
+def build_teams(raw_matches: list[dict[str, Any]]) -> list[TeamDict]:
     teams: dict[int, TeamDict] = {}
-
     for match in raw_matches:
-        for team in (
-            match["homeTeam"],
-            match["awayTeam"],
-        ):
+        for team in (match["homeTeam"], match["awayTeam"]):
             team_id = team["id"]
-
-            if team_id in teams:
-                continue
-
-            teams[team_id] = {
-                "id": team_id,
-                "name": team["name"],
-                "shortname": team.get("shortName"),
-                "tla": team.get("tla") or "",
-                "crest": team.get("crest"),
-            }
-
+            if team_id not in teams:
+                teams[team_id] = {
+                    "id": team_id,
+                    "name": team["name"],
+                    "shortname": team.get("shortName"),
+                    "tla": team.get("tla") or "",
+                    "crest": team.get("crest"),
+                }
     return list(teams.values())
 
 
 def build_matches(
-    raw_matches: list[dict],
-    season_id: int,
+    raw_matches: list[dict[str, Any]], settings_list: list[Settings]
 ) -> list[MatchDict]:
     matches: list[MatchDict] = []
-
     for match in raw_matches:
+        season_id = get_season_id_for_date(match["utcDate"], settings_list)
         matches.append(
             {
                 "id": match["id"],
@@ -104,94 +114,82 @@ def build_matches(
                 "matchday": match.get("matchday"),
             }
         )
-
     return matches
 
 
-def upsert_data(
-    table: str,
-    data: list[dict],
-    on_conflict: str,
-) -> None:
+def upsert_data(table: str, data: list[dict[str, Any]], on_conflict: str) -> None:
     if not data:
         return
-
-    (
-        supabase.table(table)
-        .upsert(
-            data,
-            on_conflict=on_conflict,
-        )
-        .execute()
-    )
+    supabase.table(table).upsert(data, on_conflict=on_conflict).execute()
 
 
-def sync_matches() -> None:
+def sync_matches(full_fetch: bool = False) -> None:
     home_team_id = int(os.environ["HOME_TEAM_ID"])
     api_key = os.environ["FOOTBALL_DATA_API_KEY"]
 
     settings_list = get_settings(home_team_id)
-
     if not settings_list:
-        raise RuntimeError(f"No settings found for HOME_TEAM_ID={home_team_id}")
+        raise RuntimeError(
+            f"No s'han trobat paràmetres a settings per a HOME_TEAM_ID={home_team_id}"
+        )
 
-    all_competitions: dict[str, CompetitionDict] = {}
-    all_teams: dict[int, TeamDict] = {}
-    all_matches: dict[int, MatchDict] = {}
-
-    with FootballDataClient(
-        api_key=api_key,
-    ) as client:
-        for settings in settings_list:
-            two_digit_year = settings.season_id % 100
-            print(
-                f"  📖 Llegint partits de la temporada {two_digit_year:02d}/{(two_digit_year + 1):02d}"
-            )
-
-            response = client.get_team_matches(
-                team_id=settings.home_team_id,
-                season=settings.season_id,
-            )
-
-            raw_matches = response["matches"]
-
-            for competition in build_competitions(raw_matches):
-                all_competitions[competition["code"]] = competition
-
-            for team in build_teams(raw_matches):
-                all_teams[team["id"]] = team
-
-            for match in build_matches(
-                raw_matches,
-                settings.season_id,
-            ):
-                all_matches[match["id"]] = match
-
-    upsert_data(
-        table="competitions",
-        data=cast(list[dict], list(all_competitions.values())),
-        on_conflict="code",
+    target_settings = (
+        settings_list if full_fetch else [max(settings_list, key=lambda s: s.season_id)]
     )
 
-    upsert_data(
-        table="teams",
-        data=cast(list[dict], list(all_teams.values())),
-        on_conflict="id",
-    )
+    all_ranges = [get_season_dates(s.season_id) for s in target_settings]
+    min_date_from = min(r[0] for r in all_ranges)
+    max_date_to = max(r[1] for r in all_ranges)
 
-    upsert_data(
-        table="matches",
-        data=cast(list[dict], list(all_matches.values())),
-        on_conflict="id",
-    )
+    if not full_fetch:
+        min_date_from = datetime.now(UTC).date()
+
+    all_raw_matches: list[dict[str, Any]] = []
+
+    with FootballDataClient(api_key=api_key) as client:
+        print(
+            f"  📅 Consultant: {min_date_from.strftime('%Y-%m-%d')} -> {max_date_to.strftime('%Y-%m-%d')}"
+        )
+
+        response = client.get_team_matches_date(
+            team_id=home_team_id,
+            date_from=min_date_from,
+            date_to=max_date_to,
+        )
+
+        all_raw_matches.extend(response.get("matches", []))
+
+    # 3. Processar i estructurar les dades
+    competitions = build_competitions(all_raw_matches)
+    teams = build_teams(all_raw_matches)
+    matches = build_matches(all_raw_matches, settings_list)
+
+    # 4. Guardar a Supabase
+    upsert_data("competitions", cast(list[dict[str, Any]], competitions), "code")
+    upsert_data("teams", cast(list[dict[str, Any]], teams), "id")
+    upsert_data("matches", cast(list[dict[str, Any]], matches), "id")
 
     print(
-        f"    🥅 {len(all_matches)} partits\n"
-        f"    ⚽ {len(all_teams)} equips\n"
-        f"    🏆 {len(all_competitions)} competicions\n"
+        f"    🥅 {len(matches)} partits sincronitzats\n"
+        f"    ⚽ {len(teams)} equips\n"
+        f"    🏆 {len(competitions)} competicions\n"
         "  ✅ Sincronització completada"
     )
 
 
 if __name__ == "__main__":
-    sync_matches()
+    parser = argparse.ArgumentParser(
+        description="Sincronitza partits des de Football-Data cap a Supabase mitjançant rangs de dates."
+    )
+    parser.add_argument(
+        "-f",
+        "--full",
+        "--full-fetch",
+        dest="full_fetch",
+        action="store_true",
+        default=False,
+        help="Si s'activa, sincronitza totes les temporades registrades des del 15 de juliol inicial.",
+    )
+
+    args = parser.parse_args()
+    sync_matches(full_fetch=args.full_fetch)

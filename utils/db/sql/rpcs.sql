@@ -22,8 +22,9 @@ begin
     (4, 'Roger', 'Solé', 'Sotillo', 'rogersolesotillo@gmail.com', null, 174260),
     (5, 'Marisa', 'Solé', 'Palacín', null, null, 34205),
     (6, 'Sara', 'Pascual', 'Luna', null, null, null),
-    (7, 'Iolanda', 'Sotillo', 'Sáez', null, null, null),
-    (8, 'Sergi', 'Solé', 'Palacín', null, 'Gran', null)
+    (7, 'Arlet', 'Solé', 'Pascual', null, null, null),
+    (8, 'Iolanda', 'Sotillo', 'Sáez', null, null, null),
+    (9, 'Sergi', 'Solé', 'Palacín', null, 'Gran', null)
   on conflict do nothing;
   get diagnostics v_count = row_count;
   raise notice '  👤 Persones processades (% noves files inserides)', v_count;

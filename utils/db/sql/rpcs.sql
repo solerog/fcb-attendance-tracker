@@ -62,6 +62,9 @@ begin
   get diagnostics v_count = row_count;
   raise notice '🏆 Competicions processades (% noves files inserides)', v_count;
 
+  insert into matches (id, season_id, competition_code, home_team_id, away_team_id, date, status) values (544470, 2025, 'CDR', 81, 78, '2026-03-03 19:00:00+00', 'FINISHED')
+  on conflict do nothing;
+
   return '✅ Base de dades poblada correctament';
 end;
 $$;

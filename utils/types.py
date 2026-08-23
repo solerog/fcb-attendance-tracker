@@ -17,6 +17,7 @@ class PersonRow(TypedDict):
     first_surname: str
     second_surname: str
     clau_soci: int | None
+    email: str | None
 
 
 class SeatRow(TypedDict):

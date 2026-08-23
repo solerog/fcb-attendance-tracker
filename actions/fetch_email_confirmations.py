@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 from utils.db.supabase import supabase
+from utils.gmail import get_imap_connection
 from utils.types import (
     AssistantInfo,
     AttendanceInsert,
@@ -188,7 +189,7 @@ def parse_email_body(raw_text: str) -> ParsedEmail:
             assistants.append(
                 {
                     "name": clean_html_field(nom.group(1)),
-                    "surname": clean_html_field(cognoms.group(1)),
+                    "first_surname": clean_html_field(cognoms.group(1)),
                     "clau_soci": int(clau.group(1).strip()) if clau else None,
                 }
             )
@@ -304,6 +305,7 @@ def get_or_create_person(
         if second_surname_raw
         else "",
         "clau_soci": None,
+        "email": None,
     }
 
     supabase.table("people").insert(cast(dict[str, Any], new_person)).execute()
@@ -352,139 +354,139 @@ def process_confirmations() -> None:
     processed_locators = get_all_processed_locators()
     latest_processed = get_latest_processed_date()
 
-    mail = get_gmail_connection()
-    mail.select("INBOX")
+    with get_imap_connection("INBOX") as mail:
+        search_query = '(FROM "info.tickets@fcbarcelona.cat" SUBJECT "temporada"'
+        if latest_processed:
+            since_date = (latest_processed - timedelta(days=1)).strftime("%d-%b-%Y")
+            search_query += f' SINCE "{since_date}"'
+        search_query += ")"
 
-    search_query = '(FROM "info.tickets@fcbarcelona.cat" SUBJECT "temporada"'
-    if latest_processed:
-        since_date = (latest_processed - timedelta(days=1)).strftime("%d-%b-%Y")
-        search_query += f' SINCE "{since_date}"'
-    search_query += ")"
+        print(f"Cercant a Gmail amb criteri: {search_query}")
+        status, messages = mail.search(None, search_query)
 
-    print(f"Cercant a Gmail amb criteri: {search_query}")
-    status, messages = mail.search(None, search_query)
+        if status != "OK" or not messages[0]:
+            print("No s'han trobat nous correus per processar.")
+            return
 
-    if status != "OK" or not messages[0]:
-        print("No s'han trobat nous correus per processar.")
-        mail.logout()
-        return
+        email_ids = messages[0].split()
+        print(f"Correus trobats pel filtre: {len(email_ids)}")
 
-    email_ids = messages[0].split()
-    print(f"Correus trobats pel filtre: {len(email_ids)}")
+        for e_id in email_ids:
+            _, msg_data = mail.fetch(e_id, "(RFC822)")
+            if not msg_data or not msg_data[0] or not isinstance(msg_data[0], tuple):
+                continue
 
-    for e_id in email_ids:
-        _, msg_data = mail.fetch(e_id, "(RFC822)")
-        if not msg_data or not msg_data[0] or not isinstance(msg_data[0], tuple):
-            continue
+            raw_email_bytes = cast(bytes, msg_data[0][1])
+            msg = email.message_from_bytes(raw_email_bytes)
 
-        raw_email_bytes = cast(bytes, msg_data[0][1])
-        msg = email.message_from_bytes(raw_email_bytes)
-
-        email_date_raw = msg.get("Date", "")
-        email_date_tuple = (
-            email.utils.parsedate_to_datetime(email_date_raw).astimezone(LOCAL_TZ)
-            if email_date_raw
-            else datetime.now(LOCAL_TZ)
-        )
-
-        body = ""
-        if msg.is_multipart():
-            for part in msg.walk():
-                if part.get_content_type() == "text/plain":
-                    payload = part.get_payload(decode=True)
-                    if isinstance(payload, bytes):
-                        body = payload.decode(errors="ignore")
-                    break
-        else:
-            payload = msg.get_payload(decode=True)
-            if isinstance(payload, bytes):
-                body = payload.decode(errors="ignore")
-
-        parsed = parse_email_body(body)
-        locator = parsed["locator"]
-
-        if not locator:
-            print("⚠️ No s'ha trobat cap localitzador al correu. S'omet.")
-            continue
-
-        if locator in processed_locators:
-            print(f"⏩ Localitzador {locator} ja processat anteriorment. Ometent.")
-            continue
-
-        if not parsed["rival"] or not parsed["assistants"]:
-            continue
-
-        ref_dt = parsed["registration_dt"] or email_date_tuple
-
-        match_id = find_match_id(
-            rival_text=parsed["rival"],
-            home_team_id=home_team_id,
-            ref_date=ref_dt,
-        )
-
-        if not match_id:
-            print(
-                f"⚠️ No s'ha trobat partit per al rival: {parsed['rival']} "
-                f"(Inscripció: {ref_dt.strftime('%Y-%m-%d')})."
+            email_date_raw = msg.get("Date", "")
+            email_date_tuple = (
+                email.utils.parsedate_to_datetime(email_date_raw).astimezone(LOCAL_TZ)
+                if email_date_raw
+                else datetime.now(LOCAL_TZ)
             )
-            continue
 
-        attendance_rows: list[AttendanceInsert] = []
+            body = ""
+            if msg.is_multipart():
+                for part in msg.walk():
+                    if part.get_content_type() == "text/plain":
+                        payload = part.get_payload(decode=True)
+                        if isinstance(payload, bytes):
+                            body = payload.decode(errors="ignore")
+                        break
+            else:
+                payload = msg.get_payload(decode=True)
+                if isinstance(payload, bytes):
+                    body = payload.decode(errors="ignore")
 
-        for assistant in parsed["assistants"]:
-            seat_id: int | None = None
-            if assistant["clau_soci"]:
-                s_match = next(
-                    (s for s in seats if s.get("clau_soci") == assistant["clau_soci"]),
-                    None,
-                )
-                if s_match:
-                    seat_id = s_match["id"]
+            parsed = parse_email_body(body)
+            locator = parsed["locator"]
 
-            if not seat_id:
+            if not locator:
+                print("⚠️ No s'ha trobat cap localitzador al correu. S'omet.")
+                continue
+
+            if locator in processed_locators:
+                print(f"⏩ Localitzador {locator} ja processat anteriorment. Ometent.")
+                continue
+
+            if not parsed["rival"] or not parsed["assistants"]:
+                continue
+
+            ref_dt = parsed["registration_dt"] or email_date_tuple
+
+            match_id = find_match_id(
+                rival_text=parsed["rival"],
+                home_team_id=home_team_id,
+                ref_date=ref_dt,
+            )
+
+            if not match_id:
                 print(
-                    f"⚠️ No s'ha trobat cap seient per a la clau de soci {assistant['clau_soci']}."
+                    f"⚠️ No s'ha trobat partit per al rival: {parsed['rival']} "
+                    f"(Inscripció: {ref_dt.strftime('%Y-%m-%d')})."
                 )
                 continue
 
-            person_id = get_or_create_person(
-                name=assistant["name"],
-                surnames_raw=assistant["surname"],
-                people_cache=people,
-            )
+            attendance_rows: list[AttendanceInsert] = []
 
-            attendance_rows.append(
-                {
-                    "match_id": match_id,
-                    "seat_id": seat_id,
-                    "person_id": person_id,
-                }
-            )
+            for assistant in parsed["assistants"]:
+                seat_id: int | None = None
+                if assistant["clau_soci"]:
+                    s_match = next(
+                        (
+                            s
+                            for s in seats
+                            if s.get("clau_soci") == assistant["clau_soci"]
+                        ),
+                        None,
+                    )
+                    if s_match:
+                        seat_id = s_match["id"]
 
-        if attendance_rows:
-            supabase.table("attendance").upsert(
-                cast(list[dict[str, Any]], attendance_rows),
-                on_conflict="match_id,seat_id",
+                if not seat_id:
+                    print(
+                        f"⚠️ No s'ha trobat cap seient per a la clau de soci {assistant['clau_soci']}."
+                    )
+                    continue
+
+                person_id = get_or_create_person(
+                    name=assistant["name"],
+                    surnames_raw=assistant["first_surname"],
+                    people_cache=people,
+                )
+
+                attendance_rows.append(
+                    {
+                        "match_id": match_id,
+                        "seat_id": seat_id,
+                        "person_id": person_id,
+                    }
+                )
+
+            if attendance_rows:
+                supabase.table("attendance").upsert(
+                    cast(list[dict[str, Any]], attendance_rows),
+                    on_conflict="match_id,seat_id",
+                ).execute()
+
+            supabase.table("matches").update({"tickets_requested": True}).eq(
+                "id", match_id
             ).execute()
 
-        supabase.table("matches").update({"tickets_requested": True}).eq(
-            "id", match_id
-        ).execute()
+            supabase.table("processed_emails").insert(
+                {
+                    "locator": locator,
+                    "match_id": match_id,
+                    "registration_date": ref_dt.isoformat(),
+                }
+            ).execute()
 
-        supabase.table("processed_emails").insert(
-            {
-                "locator": locator,
-                "match_id": match_id,
-                "registration_date": ref_dt.isoformat(),
-            }
-        ).execute()
-
-        processed_locators.add(locator)
-        print(
-            f"✅ Localitzador {locator} processat amb èxit (Partit ID: {match_id}, {len(attendance_rows)} seients)."
-        )
-
-    mail.logout()
+            processed_locators.add(locator)
+            print(
+                f"✅ Localitzador {locator} processat amb èxit (Partit ID: "
+                f"{match_id}, {len(attendance_rows)} seients)."
+            )
 
 
 if __name__ == "__main__":

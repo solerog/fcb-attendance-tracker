@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 from utils.db.supabase import supabase
+from utils.gmail import send_email
 from utils.types import PersonRow
 
 load_dotenv()
@@ -151,7 +152,7 @@ Recorda fer la petició a la web del soci abans que venci el termini.
 """
 
         print(f"📧 Enviant recordatori per al partit vs {rival} ({urgency_tag})...")
-        send_email_notification(
+        send_email(
             recipients=recipients,
             subject=subject,
             body_text=body_text,

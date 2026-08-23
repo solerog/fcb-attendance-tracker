@@ -66,6 +66,7 @@ group by
     p.description,
     m.season_id;
 
+drop view if exists attendance_details;
 create or replace view attendance_details
 with (security_invoker = true)
 as

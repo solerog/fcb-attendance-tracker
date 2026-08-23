@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 """Comprova partits amb sol·licituds obertes pendents i envia recordatoris per correu."""
 
-import os
-import smtplib
 from datetime import UTC, datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from typing import Any, cast
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
 from utils.db.supabase import supabase
-from utils.gmail import send_email
+from utils.gmail import get_smtp_connection, send_email
 from utils.types import PersonRow
 
 load_dotenv()
@@ -20,35 +16,11 @@ load_dotenv()
 LOCAL_TZ = ZoneInfo("Europe/Madrid")
 
 
-def send_email_notification(
-    recipients: list[str],
-    subject: str,
-    body_text: str,
-    body_html: str,
-) -> None:
-    user = os.environ["GMAIL_USER"]
-    password = os.environ.get("GMAIL_PASSWORD") or os.environ.get(
-        "GMAIL_APP_PASSWORD", ""
-    )
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = f"FCB Attendance Tracker <{user}>"
-    msg["To"] = ", ".join(recipients)
-
-    msg.attach(MIMEText(body_text, "plain"))
-    msg.attach(MIMEText(body_html, "html"))
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(user, password)
-        server.sendmail(user, recipients, msg.as_string())
-
-
 def main() -> None:
     # 1. Obtenir persones amb correu registrat
     people_res = (
         supabase.table("people")
-        .select("id, name, first_surname, email")
+        .select("id, name, email")
         .not_.is_("email", "null")
         .execute()
     )
@@ -64,7 +36,8 @@ def main() -> None:
     matches_res = (
         supabase.table("match_details")
         .select(
-            "id, date, away_team_name, away_team_shortname, request_deadline, tickets_open, tickets_requested"
+            "id, date, away_team_name, away_team_shortname, away_team_tla,"
+            "request_deadline, tickets_open, tickets_requested"
         )
         .eq("tickets_open", True)
         .eq("tickets_requested", False)
@@ -80,88 +53,102 @@ def main() -> None:
     print(f"ℹ️ {len(matches)} partit/s trobats amb entrades obertes")
 
     now = datetime.now(UTC)
-
     emails_sent = 0
-    for match in matches:
-        deadline_raw = match.get("request_deadline")
-        if not deadline_raw:
-            continue
 
-        deadline_dt = datetime.fromisoformat(deadline_raw)
-        time_diff = (deadline_dt - now).total_seconds()
+    # 3. Obrim la sessió SMTP una sola vegada per a tots els correus
+    with get_smtp_connection() as smtp_session:
+        for match in matches:
+            deadline_raw = match.get("request_deadline")
+            if not deadline_raw:
+                continue
 
-        day_in_s = 86400
-        if 0 < time_diff <= day_in_s:
-            urgency_tag = "AVUI"
-            subject_prefix = "🚨 ÚLTIM DIA: AVUI acaba el termini"
-        elif 86400 < time_diff <= 2 * day_in_s:
-            urgency_tag = "DEMÀ"
-            subject_prefix = "⚠️ RECORDATORI: DEMÀ acaba el termini"
-        else:
-            continue
+            deadline_dt = datetime.fromisoformat(deadline_raw)
+            time_diff = (deadline_dt - now).total_seconds()
 
-        rival = (
-            match.get("away_team_name") or match.get("away_team_shortname") or "Rival"
-        )
+            day_in_s = 86400
+            if 0 < time_diff <= day_in_s:
+                urgency_tag = "AVUI"
+                subject_prefix = "🚨 ÚLTIM DIA: AVUI acaba el termini"
+            elif 86400 < time_diff <= 2 * day_in_s:
+                urgency_tag = "DEMÀ"
+                subject_prefix = "⚠️ RECORDATORI: DEMÀ acaba el termini"
+            else:
+                continue
 
-        # Formatar dates en hora local
-        match_dt_local = datetime.fromisoformat(match["date"]).astimezone(LOCAL_TZ)
-        deadline_dt_local = deadline_dt.astimezone(LOCAL_TZ)
+            rival = (
+                match.get("away_team_shortname")
+                or match.get("away_team_name")
+                or match.get("away_team_tla")
+            )
 
-        match_date_str = match_dt_local.strftime("%d/%m/%Y a les %H:%M h")
-        deadline_str = deadline_dt_local.strftime("%d/%m/%Y a les %H:%M h")
+            # Formatar dates en hora local
+            match_dt_local = datetime.fromisoformat(match["date"]).astimezone(LOCAL_TZ)
+            deadline_dt_local = deadline_dt.astimezone(LOCAL_TZ)
 
-        subject = f"{subject_prefix} per demanar entrades vs {rival}"
+            match_date_str = match_dt_local.strftime("%d/%m/%Y a les %H:%M h")
+            deadline_str = deadline_dt_local.strftime("%d/%m/%Y a les %H:%M h")
 
-        body_text = f"""Hola!
+            subject = f"{subject_prefix} per demanar entrades vs {rival}"
 
-{urgency_tag} finalitza el període per sol·licitar les entrades per al següent partit:
+            body_text = f"""Hola!
+            
+            {urgency_tag} finalitza el període per sol·licitar les entrades per al següent partit:
+            
+            ⚽ Partit: FC Barcelona vs {rival}
+            📅 Data del partit: {match_date_str}
+            ⏰ Data límit de sol·licitud: {deadline_str}
+            
+            Recorda fer la petició a la web del soci abans que venci el termini.
+            """
 
-⚽ Partit: FC Barcelona vs {rival}
-📅 Data del partit: {match_date_str}
-⏰ Data límit de sol·licitud: {deadline_str}
+            body_html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; }}
+                    .card {{ max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }}
+                    .header {{ font-size: 1.25rem; font-weight: 700; color: #004d98; margin-bottom: 12px; }}
+                    .badge {{ display: inline-block; padding: 4px 10px; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-bottom: 16px; }}
+                    .info-row {{ margin: 10px 0; font-size: 0.95rem; }}
+                    .info-label {{ font-weight: 600; color: #64748b; }}
+                    .footer {{ margin-top: 24px; font-size: 0.8rem; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 12px; }}
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <div class="badge">{urgency_tag} TANCAMENT DE SOL·LICITUDS</div>
+                    <div class="header">FC Barcelona vs {rival}</div>
+                    <p>
+                        Recordatori automàtic: les entrades per a aquest partit encara estan 
+                        <strong>pendents de demanar</strong>
+                        .
+                    </p>
+                    <div class="info-row">
+                        <span class="info-label">📅 Data del partit:</span>
+                        {match_date_str}
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">⏰ Termini:</span>
+                        <strong>{deadline_str}</strong>
+                    </div>
+                    <div class="footer">FCB Attendance Tracker · Notificació automàtica</div>
+                </div>
+            </body>
+            </html>
+            """
 
-Recorda fer la petició a la web del soci abans que venci el termini.
-"""
+            print(f"📧 Enviant recordatori per al partit vs {rival} ({urgency_tag})...")
+            send_email(
+                recipients=recipients,
+                subject=subject,
+                body_text=body_text,
+                body_html=body_html,
+                smtp_server=smtp_session,  # Reutilitza la sessió oberta
+            )
+            print(f"  ✅ Correu enviat a {len(recipients)} destinataris.")
 
-        body_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; }}
-    .card {{ max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }}
-    .header {{ font-size: 1.25rem; font-weight: 700; color: #004d98; margin-bottom: 12px; }}
-    .badge {{ display: inline-block; padding: 4px 10px; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; margin-bottom: 16px; }}
-    .info-row {{ margin: 10px 0; font-size: 0.95rem; }}
-    .info-label {{ font-weight: 600; color: #64748b; }}
-    .footer {{ margin-top: 24px; font-size: 0.8rem; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 12px; }}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="badge">{urgency_tag} TANCAMENT DE SOL·LICITUDS</div>
-    <div class="header">FC Barcelona vs {rival}</div>
-    <p>Recordatori automàtic: les entrades per a aquest partit encara estan <strong>pendents de demanar</strong>.</p>
-    
-    <div class="info-row"><span class="info-label">📅 Data del partit:</span> {match_date_str}</div>
-    <div class="info-row"><span class="info-label">⏰ Termini:</span> <strong>{deadline_str}</strong></div>
-    
-    <div class="footer">FCB Attendance Tracker · Notificació automàtica</div>
-  </div>
-</body>
-</html>
-"""
-
-        print(f"📧 Enviant recordatori per al partit vs {rival} ({urgency_tag})...")
-        send_email(
-            recipients=recipients,
-            subject=subject,
-            body_text=body_text,
-            body_html=body_html,
-        )
-        print(f"  ✅ Correu enviat a {len(recipients)} destinataris.")
-        emails_sent += 1
+            emails_sent += 1
 
     if emails_sent == 0:
         print("  Cap partit segons els criteris de notificació.")

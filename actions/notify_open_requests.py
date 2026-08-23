@@ -77,8 +77,11 @@ def main() -> None:
         print("ℹ️ No hi ha partits amb sol·licituds obertes i pendents de demanar.")
         return
 
+    print(f"ℹ️ {len(matches)} partit/s trobats amb entrades obertes")
+
     now = datetime.now(UTC)
 
+    emails_sent = 0
     for match in matches:
         deadline_raw = match.get("request_deadline")
         if not deadline_raw:
@@ -87,15 +90,14 @@ def main() -> None:
         deadline_dt = datetime.fromisoformat(deadline_raw)
         time_diff = (deadline_dt - now).total_seconds()
 
-        # Avaluar si queden menys de 24h o menys de 48h
-        if 0 < time_diff <= 86400:
+        day_in_s = 86400
+        if 0 < time_diff <= day_in_s:
             urgency_tag = "AVUI"
             subject_prefix = "🚨 ÚLTIM DIA: AVUI acaba el termini"
-        elif 86400 < time_diff <= 172800:
+        elif 86400 < time_diff <= 2 * day_in_s:
             urgency_tag = "DEMÀ"
             subject_prefix = "⚠️ RECORDATORI: DEMÀ acaba el termini"
         else:
-            # Més de 2 dies o termini ja superat
             continue
 
         rival = (
@@ -159,6 +161,10 @@ Recorda fer la petició a la web del soci abans que venci el termini.
             body_html=body_html,
         )
         print(f"  ✅ Correu enviat a {len(recipients)} destinataris.")
+        emails_sent += 1
+
+    if emails_sent == 0:
+        print("  Cap partit segons els criteris de notificació.")
 
 
 if __name__ == "__main__":

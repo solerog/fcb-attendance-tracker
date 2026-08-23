@@ -1,4 +1,4 @@
-name: 4. Reset and Populate Database
+name: 5. Reset and Populate Database
 
 on:
   workflow_dispatch:

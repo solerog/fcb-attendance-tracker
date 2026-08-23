@@ -72,7 +72,6 @@ $$;
 revoke execute on function populate_db()
 from public;
 
---drop function set_tickets_requested(bigint,boolean);
 
 create or replace function set_tickets_requested (
     p_match_id bigint,
@@ -105,4 +104,27 @@ $$;
 revoke execute on function set_tickets_requested(bigint, boolean)
 from public;
 grant execute on function set_tickets_requested(bigint, boolean)
+to authenticated;
+
+
+create or replace function add_missing_matches()
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    inserted_rows int;
+begin
+    insert into matches (id, season_id, competition_code, home_team_id, away_team_id, date, status) values (544470, 2025, 'CDR', 81, 78, '2026-03-03 19:00:00+00', 'FINISHED')
+    on conflict do nothing;
+
+    get diagnostics inserted_rows = row_count;
+    return inserted_rows > 0;
+end;
+$$;
+
+revoke execute on function add_missing_matches()
+from public;
+grant execute on function add_missing_matches()
 to authenticated;

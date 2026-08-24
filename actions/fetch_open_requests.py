@@ -177,20 +177,23 @@ def main() -> None:
         return
 
     current_settings = settings_rows[0]
+    season_id = current_settings["season_id"]
     url = current_settings.get("open_requests_url")
 
     if not url:
         print(
-            f"⚠️ No s'ha definit cap URL a open_requests_url per a la temporada {current_settings['season_id']}."
+            f"⚠️ No s'ha definit cap URL a open_requests_url per a la temporada {season_id}."
         )
         return
 
-    # 2. Obtenir els partits de casa de la temporada
+    # 2. Obtenir tots els partits de casa de la temporada
     matches_res = (
         supabase.table("match_details")
-        .select("id, date, away_team_name, away_team_shortname, season_id")
+        .select(
+            "id, date, away_team_name, away_team_shortname, season_id, tickets_open"
+        )
         .eq("home_team_id", home_team_id)
-        .eq("season_id", current_settings["season_id"])
+        .eq("season_id", season_id)
         .execute()
     )
     fixtures = cast(list[MatchRow], matches_res.data or [])
@@ -198,8 +201,15 @@ def main() -> None:
     print(f"🔍 Comprovant sol·licituds obertes a: {url}")
     open_requests = check_open_requests(url, fixtures)
 
-    # 3. Actualitzar els terminis a la taula matches
-    updated_count = 0
+    # 3. Conjunt dels IDs dels partits que ACTUALMENT estan oberts al web
+    currently_open_match_ids = {
+        req["match_id"]
+        for req in open_requests
+        if req.get("match_id") and req.get("is_open", True)
+    }
+
+    # 4. Actualitzar a TRUE els partits oberts (i el seu deadline si s'ha trobat)
+    updated_open_count = 0
     for req in open_requests:
         match_id = req["match_id"]
         deadline = req["request_deadline"]
@@ -207,19 +217,32 @@ def main() -> None:
         if not match_id:
             continue
 
-        update_dict = {"tickets_open": True}
-
+        update_dict: dict[str, Any] = {"tickets_open": True}
         if deadline:
-            update_dict.update({"request_deadline": deadline})
+            update_dict["request_deadline"] = deadline
 
         supabase.table("matches").update(update_dict).eq("id", match_id).execute()
-        updated_count += 1
+        updated_open_count += 1
+        print(f"  ✅ Entrades obertes per al partit ID {match_id}")
+
+    # 5. Actualitzar a FALSE els partits que estaven oberts a la BD però ja no ho estan al web
+    matches_to_close = [
+        m["id"]
+        for m in fixtures
+        if m.get("tickets_open") is True and m["id"] not in currently_open_match_ids
+    ]
+
+    for match_id in matches_to_close:
+        supabase.table("matches").update({"tickets_open": False}).eq(
+            "id", match_id
+        ).execute()
         print(
-            f"  ✅ Entrades obertes i termini actualitzats per al partit ID {match_id}"
+            f"  🔒 Formulari tancat: Partit ID {match_id} marcat amb tickets_open = false"
         )
 
     print(
-        f"✨ S'han processat {len(open_requests)} sol·licituds ({updated_count} partits actualitzats)."
+        f"✨ Sincronització completada: {updated_open_count} partits oberts, "
+        f"{len(matches_to_close)} partits tancats."
     )
 
 

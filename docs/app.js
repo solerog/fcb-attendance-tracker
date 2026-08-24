@@ -16,13 +16,17 @@ const state = {
     upcomingMatches: [],
     calendarMatches: [],
     pastMatches: [],
+    attendanceStats: [],
 
     calendarVisible: 5,
     pastVisible: 2,
 
     homeOnly: false,
+    statsAllSeasons: false,
+    statsShowAllPeople: false
 };
 
+let attendanceChartInstance = null;
 
 const loginScreen = document.getElementById("login-screen");
 const appScreen = document.getElementById("app-screen");
@@ -57,8 +61,11 @@ const homeOnlyToggle =
 const statsSummary =
     document.getElementById("stats-summary");
 
-const statsAttendance =
-    document.getElementById("stats-attendance");
+const statsSeasonToggle =
+    document.getElementById("stats-season-toggle");
+
+const statsLoadMoreButton =
+    document.getElementById("stats-load-more");
 
 const pastMatchesContainer =
     document.getElementById("past-matches");
@@ -295,6 +302,7 @@ async function loadInitialData() {
             .from("match_details")
             .select("*")
             .lt("date", new Date().toISOString())
+            .eq("tickets_requested", true)
             .order("date", {
                 ascending: false,
             }),
@@ -462,7 +470,6 @@ function renderMatchAttendance(
         return;
     }
 
-    // Obtenim totes les persones que tenen un seient assignat en aquest partit
     const allAssignedPersons = new Set(
         Array.from(attendanceBySeat.values())
             .filter(id => id !== null && id !== undefined)
@@ -474,7 +481,6 @@ function renderMatchAttendance(
             .map(seat => {
                 const currentSeatPersonId = attendanceBySeat.get(seat.id);
 
-                // Persones assignades a la resta de seients (excloent l'actual)
                 const otherSeatsAssigned = new Set(allAssignedPersons);
                 if (currentSeatPersonId) {
                     otherSeatsAssigned.delete(Number(currentSeatPersonId));
@@ -526,7 +532,7 @@ function renderSeatSelector(
                     ${isSelected ? "selected" : ""}
                     ${isAlreadyTaken ? "disabled" : ""}
                 >
-                    ${escapeHtml(`${person.name} ${person.first_surname}`)}${person.description ? escapeHtml(`\(${person.description}\)`) : ""}${isAlreadyTaken ? " (Ja assignat/da)" : ""}
+                    ${escapeHtml(`${person.name} ${person.first_surname || person.surname || ""}`)}${person.description ? escapeHtml(` (${person.description})`) : ""}${isAlreadyTaken ? " (Ja assignat/da)" : ""}
                 </option>
             `;
         }),
@@ -666,7 +672,6 @@ function renderUpcomingMatches() {
                 return;
             }
 
-            // Desbloquejar dropdowns
             matchCard.querySelectorAll("select").forEach((select) => {
                 select.disabled = false;
             });
@@ -677,7 +682,6 @@ function renderUpcomingMatches() {
                 ?.closest(".toggle-control")
                 ?.classList.remove("hidden");
 
-            // Amagar el botó Editar
             button.classList.add("hidden");
         });
     });
@@ -1095,188 +1099,260 @@ function renderPastMatches() {
 
     pastMatchesContainer.innerHTML =
         visibleMatches
-            .map(renderPastMatch)
+            .map(renderPastMatchCard)
             .join("");
 
     pastLoadMoreButton.hidden =
         visibleMatches.length >=
         matches.length;
 
-    document
-        .querySelectorAll(
-            ".edit-attendance-button"
-        )
-        .forEach(button => {
-            button.addEventListener(
-                "click",
-                () => {
-                    openAttendanceEditor(
-                        Number(
-                            button.dataset.matchId
-                        )
-                    );
-                }
-            );
+    document.querySelectorAll(".toggle-past-edit-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const matchId = Number(button.dataset.matchId);
+            const drawer = document.querySelector(`[data-past-drawer="${matchId}"]`);
+            if (!drawer) return;
+
+            const isOpening = drawer.classList.contains("hidden");
+            drawer.classList.toggle("hidden");
+            button.textContent = isOpening ? "✖ Tancar" : "✏️ Modificar";
+
+            if (isOpening) {
+                await loadMatchAttendance(matchId);
+            }
         });
+    });
 }
 
 
-function renderPastMatch(match) {
+function renderPastMatchCard(match) {
+    const isHome =
+        match.home_team_id ===
+        state.homeTeamId;
+
+    const competitionName =
+        match.competition_shortname ??
+        match.competition_name ??
+        "";
+
     return `
-        <article class="match-row match-row--past">
-
-            <div class="match-row-date">
-
-                <strong>
-                    ${formatMatchDay(
-        match.date
-    )}
-                </strong>
-
-                <span>
-                    ${formatMatchTime(
-        match.date
-    )}
-                </span>
-
-            </div>
-
-
-            <div class="match-row-main">
-
-                <div class="match-row-teams match-row-teams--visual">
-
-                    ${renderImage(
-        match.home_team_crest,
-        match.home_team_name,
-        "match-row-crest"
-    )}
-
-                    <span>
-                        ${escapeHtml(
-        match.home_team_shortname ??
-        match.home_team_name
-    )}
-                    </span>
-
-                    <strong>—</strong>
-
-                    <span>
-                        ${escapeHtml(
-        match.away_team_shortname ??
-        match.away_team_name
-    )}
-                    </span>
-
-                    ${renderImage(
-        match.away_team_crest,
-        match.away_team_name,
-        "match-row-crest"
-    )}
-
+        <div class="match-row-past-wrapper ${isHome ? "home-match" : "away-match"}">
+            <article class="match-row">
+                <div class="match-row-date">
+                    <strong>
+                        ${formatMatchWeekday(match.date)}
+                        ${formatMatchDay(match.date)}
+                    </strong>
+                    <span>${formatMatchTime(match.date)}</span>
                 </div>
 
+                <div class="match-row-teams">
+                    <div class="match-row-team">
+                        <img
+                            src="${match.home_team_crest || ""}"
+                            alt="${match.home_team_name}"
+                            class="match-row-crest"
+                        >
+                        <span>${match.home_team_shortname || match.home_team_name}</span>
+                    </div>
+
+                    <div class="match-row-separator">-</div>
+
+                    <div class="match-row-team">
+                        <img
+                            src="${match.away_team_crest || ""}"
+                            alt="${match.away_team_name}"
+                            class="match-row-crest"
+                        >
+                        <span>${match.away_team_shortname || match.away_team_name}</span>
+                    </div>
+                </div>
+
+                <div class="match-row-info">
+                    <div class="match-row-competition">
+                        ${match.competition_emblem
+            ? `<img src="${match.competition_emblem}" alt="" class="competition-emblem">`
+            : ""
+        }
+                        <span>${competitionName}</span>
+                    </div>
+
+                    <div class="past-actions-col">
+                        <button
+                            type="button"
+                            class="edit-match-button toggle-past-edit-btn"
+                            data-match-id="${match.id}"
+                        >
+                            ✏️ Modificar
+                        </button>
+                    </div>
+                </div>
+            </article>
+
+            <div class="past-attendance-drawer hidden" data-past-drawer="${match.id}">
+                <div
+                    class="attendance-section attendance-selectors"
+                    data-attendance-match="${match.id}"
+                >
+                    <div class="loading">
+                        Carregant assistència...
+                    </div>
+                </div>
             </div>
-
-
-            <button
-                class="secondary-button edit-attendance-button"
-                type="button"
-                data-match-id="${match.id}"
-            >
-                Editar assistència
-            </button>
-
-        </article>
+        </div>
     `;
 }
 
 
 function renderStats() {
-    const totalMatches =
-        state.pastMatches.filter(
-            match =>
-                match.home_team_id ===
-                state.homeTeamId
-        ).length;
+    // 1. Filtrar partits passats segons el toggle de temporada[cite: 3]
+    const filteredPastMatches = state.pastMatches.filter(match => {
+        const isHome = match.home_team_id === state.homeTeamId;
+        if (!isHome) return false;
+        if (state.statsAllSeasons) return true;
+        return match.season_id === state.currentSeasonId;
+    });
 
-    const totalAttendance =
-        state.attendanceStats
-            .reduce(
-                (
-                    total,
-                    person
-                ) =>
-                    total +
-                    Number(
-                        person.matches_attended
-                    ),
-                0
-            );
+    const totalMatches = filteredPastMatches.length;
 
+    // 2. Mapejar assistències segons temporada[cite: 3]
+    const statsByPerson = new Map();
+    state.attendanceStats.forEach(item => {
+        if (state.statsAllSeasons || item.season_id === state.currentSeasonId || !item.season_id) {
+            const current = statsByPerson.get(Number(item.person_id)) || 0;
+            statsByPerson.set(Number(item.person_id), current + Number(item.matches_attended));
+        }
+    });
+
+    // 3. Preparar la llista de persones amb les seves assistències
+    const peopleWithStats = state.people.map(person => ({
+        id: Number(person.id),
+        name: `${person.name} ${person.first_surname || person.surname || ""}`.trim(),
+        attended: statsByPerson.get(Number(person.id)) || 0
+    }));
+
+    // 4. Filtrar per persones principals (1-4) o tothom segons l'estat del botó
+    const basePeople = state.statsShowAllPeople
+        ? peopleWithStats
+        : peopleWithStats.filter(p => [1, 2, 3, 4].includes(p.id));
+
+    // 5. ORDENAR de més assistències a menys (i per nom si empaten)
+    basePeople.sort((a, b) => b.attended - a.attended || a.name.localeCompare(b.name));
+
+    const totalAttendance = basePeople.reduce((sum, p) => sum + p.attended, 0);
+
+    // Renderitzar targetes de resum[cite: 3]
     statsSummary.innerHTML = `
         ${renderStatCard(
-        "Partits jugats",
+        state.statsAllSeasons ? "Partits a casa (Històric)" : "Partits a casa (Temporada actual)",
         totalMatches
     )}
-
         ${renderStatCard(
-        "Assistències",
+        "Assistències totals registrades",
         totalAttendance
     )}
     `;
 
-    const statsByPerson =
-        new Map(
-            state.attendanceStats.map(
-                item => [
-                    item.person_id,
-                    item,
-                ]
-            )
-        );
+    // Gestionar visibilitat del botó "Carregar-ne més"
+    if (statsLoadMoreButton) {
+        if (state.statsShowAllPeople || peopleWithStats.length <= 4) {
+            statsLoadMoreButton.hidden = true;
+        } else {
+            statsLoadMoreButton.hidden = false;
+            statsLoadMoreButton.textContent = "Carregar-ne més";
+        }
+    }
 
-    statsAttendance.innerHTML =
-        state.people
-            .map(person => {
-                const stat =
-                    statsByPerson.get(
-                        person.id
-                    );
+    renderAttendanceChart(basePeople, totalMatches);
+}
 
-                const attended =
-                    Number(
-                        stat?.matches_attended ?? 0
-                    );
 
-                return `
-                    <div class="stats-row">
+function renderAttendanceChart(sortedPeople, totalMatches) {
+    const canvas = document.getElementById("attendance-chart");
+    if (!canvas || typeof Chart === "undefined") return;
 
-                        <div class="stats-person">
+    const labels = sortedPeople.map(p => p.name);
+    const dataValues = sortedPeople.map(p => p.attended);
 
-                            <div class="person-avatar">
-                                ${getInitials(
-                    person.name,
-                    person.first_surname
-                )}
-                            </div>
+    if (attendanceChartInstance) {
+        attendanceChartInstance.destroy();
+    }
 
-                            <span class="person-name">
-                                ${escapeHtml(
-                    `${person.name} ${person.first_surname}`
-                )}
-                            </span>
+    const ctx = canvas.getContext("2d");
 
-                        </div>
+    const primaryBarColor = "rgba(37, 99, 235, 0.85)";
+    const hoverBarColor = "rgba(165, 0, 68, 0.9)";
 
-                        <span class="stats-value">
-                            ${attended}
-                        </span>
-
-                    </div>
-                `;
-            })
-            .join("");
+    attendanceChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: "Assistències",
+                    data: dataValues,
+                    backgroundColor: primaryBarColor,
+                    hoverBackgroundColor: hoverBarColor,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 45,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    backgroundColor: "#111827",
+                    titleColor: "#f8fafc",
+                    bodyColor: "#93c5fd",
+                    borderColor: "#34425b",
+                    borderWidth: 1,
+                    padding: 10,
+                    callbacks: {
+                        label: function (context) {
+                            const val = context.raw || 0;
+                            const pct = totalMatches > 0 ? Math.round((val / totalMatches) * 100) : 0;
+                            return ` Assistències: ${val} (${pct}% dels partits jugats)`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false,
+                    },
+                    ticks: {
+                        color: "#a8b3c5",
+                        font: {
+                            family: "Inter, sans-serif",
+                            weight: "600",
+                            size: 11,
+                        },
+                    },
+                },
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: Math.max(...dataValues, totalMatches, 4),
+                    grid: {
+                        color: "rgba(255, 255, 255, 0.05)",
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        color: "#718096",
+                        font: {
+                            family: "Inter, sans-serif",
+                            size: 11,
+                        },
+                    },
+                },
+            },
+        },
+    });
 }
 
 
@@ -1323,15 +1399,6 @@ async function refreshStats() {
         data ?? [];
 
     renderStats();
-}
-
-
-async function openAttendanceEditor(
-    matchId
-) {
-    alert(
-        `L'editor d'assistència del partit ${matchId} es pot afegir com a següent pas.`
-    );
 }
 
 
@@ -1507,3 +1574,17 @@ pastLoadMoreButton.addEventListener(
         renderPastMatches();
     }
 );
+
+if (statsSeasonToggle) {
+    statsSeasonToggle.addEventListener("change", (e) => {
+        state.statsAllSeasons = e.target.checked;
+        renderStats();
+    });
+}
+
+if (statsLoadMoreButton) {
+    statsLoadMoreButton.addEventListener("click", () => {
+        state.statsShowAllPeople = true;
+        renderStats();
+    });
+}

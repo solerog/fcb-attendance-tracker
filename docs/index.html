@@ -219,35 +219,34 @@
             ================== -->
 
             <section id="stats" class="section">
-
                 <div class="section-header">
-
                     <div>
-
-                        <p class="section-eyebrow">
-                            Resum
-                        </p>
-
-                        <h2>
-                            Estadístiques
-                        </h2>
-
+                        <p class="section-eyebrow">Resum</p>
+                        <h2>Estadístiques d'assistència</h2>
                     </div>
 
+                    <label class="toggle-control">
+                        <span class="toogle-info">
+                            <span class="toggle-label">Actual</span>
+                            <input id="stats-season-toggle" type="checkbox">
+                            <span class="toggle-label">Totes</span>
+                        </span>
+                    </label>
                 </div>
-
 
                 <div id="stats-summary" class="stats-grid">
-
-                    <div class="loading">
-                        Carregant estadístiques...
-                    </div>
-
+                    <div class="loading">Carregant estadístiques...</div>
                 </div>
 
+                <div class="chart-card">
+                    <canvas id="attendance-chart" height="120"></canvas>
+                </div>
 
-                <div id="stats-attendance" class="stats-attendance"></div>
-
+                <div class="load-more-container">
+                    <button id="stats-load-more" class="secondary-button" type="button">
+                        Carregar-ne més
+                    </button>
+                </div>
             </section>
 
 
@@ -298,10 +297,7 @@
     </div>
 
 
-    <!-- =========================
-         SUPABASE
-    ========================== -->
-
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Configuració local -->
@@ -309,6 +305,9 @@
 
     <!-- Aplicació -->
     <script src="./app.js"></script>
+
+    <!-- Gràfics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 </body>
 

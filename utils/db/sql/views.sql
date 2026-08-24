@@ -56,7 +56,7 @@ join matches m
 join settings s
     on s.season_id = m.season_id
     and s.home_team_id = m.home_team_id
-where m.date < now()
+where m.status = 'FINISHED'
   and a.person_id is not null
 group by
     a.person_id,

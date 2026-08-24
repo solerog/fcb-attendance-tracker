@@ -1806,3 +1806,55 @@ button:disabled {
     color: var(--text-primary);
     transform: translateY(-1px);
 }
+
+/* =========================================
+   ESTADÍSTIQUES / CHART.JS
+========================================= */
+
+.chart-card {
+    position: relative;
+    width: 100%;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    margin-top: 16px;
+}
+
+/* =========================================
+   PARTITS PASSATS (TARGETA TIPUS CALENDARI)
+========================================= */
+
+.match-row-past-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+    background: rgba(17, 26, 43, 0.7);
+    overflow: hidden;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.match-row-past-wrapper:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
+}
+
+.match-row-past-wrapper .match-row {
+    border: none;
+    background: transparent;
+}
+
+.past-attendance-drawer {
+    padding: 14px 16px;
+    background: var(--background-secondary);
+    border-top: 1px solid var(--border);
+}
+
+.past-actions-col {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}

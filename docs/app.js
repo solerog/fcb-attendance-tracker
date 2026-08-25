@@ -1220,18 +1220,16 @@ function renderPastMatchCard(match) {
 
 
 function renderStats() {
-    // 1. Obtenir les dades de la vista segons el filtre de temporada
+    // 1. Dades de la vista match_ticket_stats
     let availableMatches = 0;
     let requestedMatches = 0;
     let percentage = 0;
 
     if (state.statsAllSeasons) {
-        // Acumular totes les temporades
         availableMatches = state.ticketStats.reduce((sum, row) => sum + Number(row.available_matches || 0), 0);
         requestedMatches = state.ticketStats.reduce((sum, row) => sum + Number(row.requested_matches || 0), 0);
         percentage = availableMatches > 0 ? Math.round((requestedMatches / availableMatches) * 1000) / 10 : 0;
     } else {
-        // Temporada actual
         const currentSeasonStat = state.ticketStats.find(row => row.season_id === state.currentSeasonId);
         if (currentSeasonStat) {
             availableMatches = Number(currentSeasonStat.available_matches || 0);
@@ -1255,6 +1253,7 @@ function renderStats() {
         attended: statsByPerson.get(Number(person.id)) || 0
     }));
 
+    // 3. Filtrar per les 4 principals o tothom
     let basePeople = state.statsShowAllPeople
         ? peopleWithStats
         : peopleWithStats.filter(p => [1, 2, 3, 4].includes(p.id));
@@ -1263,10 +1262,10 @@ function renderStats() {
     basePeople = basePeople.filter(p => p.attended > 0);
     basePeople.sort((a, b) => b.attended - a.attended || a.name.localeCompare(b.name));
 
-    // 3. Renderitzar les noves targetes
+    // Renderitzar targetes de resum
     statsSummary.innerHTML = `
         ${renderStatCard(
-        state.statsAllSeasons ? "Partits disponibles (Totes les temp.)" : "Partits disponibles (Temporada ctual)",
+        state.statsAllSeasons ? "Partits disponibles (Totes)" : "Partits disponibles (Actual)",
         availableMatches
     )}
         ${renderStatCard(
@@ -1275,7 +1274,7 @@ function renderStats() {
     )}
     `;
 
-    // 4. Botó Carregar-ne més
+    // Botó "Carregar-ne més"
     if (statsLoadMoreButton) {
         if (state.statsShowAllPeople || peopleWithStats.length <= 4) {
             statsLoadMoreButton.hidden = true;
@@ -1286,6 +1285,80 @@ function renderStats() {
     }
 
     renderAttendanceChart(basePeople, requestedMatches);
+    populatePersonHistorySelect();
+}
+
+// 5. Omplir el selector de persones per consultar l'historial
+function populatePersonHistorySelect() {
+    if (!personHistorySelect) return;
+
+    const currentVal = personHistorySelect.value;
+
+    const options = [
+        '<option value="">Selecciona una persona</option>',
+        ...state.people.map(p => `
+            <option value="${p.id}" ${Number(currentVal) === Number(p.id) ? "selected" : ""}>
+                ${escapeHtml(`${p.name} ${p.first_surname || p.surname || ""}`.trim())}
+            </option>
+        `)
+    ].join("");
+
+    personHistorySelect.innerHTML = options;
+}
+
+// 6. Carregar i mostrar els partits de la persona seleccionada
+async function loadPersonMatchHistory(personId) {
+    if (!personId || !personHistoryList) {
+        personHistoryList.innerHTML = '<p class="empty-history-text">Tria un assistent per veure el seu historial de partits.</p>';
+        return;
+    }
+
+    personHistoryList.innerHTML = '<div class="loading">Cercant partits...</div>';
+
+    try {
+        let query = supabaseClient
+            .from("attendance")
+            .select("seat_id, matches:match_id (id, date, away_team_id, season_id, teams:away_team_id (name, shortname))")
+            .eq("person_id", personId);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        let records = (data || []).filter(item => item.matches !== null);
+
+        // Filtrar per temporada si el toggle està desactivat
+        if (!state.statsAllSeasons) {
+            records = records.filter(item => item.matches.season_id === state.currentSeasonId);
+        }
+
+        // Ordenar per data del partit més recent primer
+        records.sort((a, b) => new Date(b.matches.date) - new Date(a.matches.date));
+
+        if (records.length === 0) {
+            personHistoryList.innerHTML = '<p class="empty-history-text">Aquesta persona no té cap assistència registrada en aquest període.</p>';
+            return;
+        }
+
+        personHistoryList.innerHTML = records.map(item => {
+            const m = item.matches;
+            const rival = m.teams?.shortname || m.teams?.name || "Rival";
+            const dateStr = formatDate(m.date);
+
+            return `
+                <div class="history-item-row">
+                    <div class="history-item-info">
+                        <span class="history-item-date">📅 ${dateStr}</span>
+                        <span class="history-item-rival">vs ${escapeHtml(rival)}</span>
+                    </div>
+                    <span class="history-seat-badge">Seient ${item.seat_id}</span>
+                </div>
+            `;
+        }).join("");
+
+    } catch (err) {
+        console.error("Error carregant historial de la persona:", err);
+        personHistoryList.innerHTML = '<div class="error-state">No s\'ha pogut carregar l\'historial.</div>';
+    }
 }
 
 
@@ -1546,7 +1619,6 @@ function escapeHtml(value) {
 
     return element.innerHTML;
 }
-
 
 /*
 =========================================

@@ -1858,3 +1858,99 @@ button:disabled {
     justify-content: flex-end;
     align-items: center;
 }
+
+/* =========================================
+   HISTORIAL PER PERSONA
+========================================= */
+
+.person-history-card {
+    margin-top: 24px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.person-history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.person-history-header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+}
+
+.person-history-dropdown {
+    min-width: 220px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--background-secondary);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.person-history-dropdown:focus {
+    border-color: var(--blue);
+}
+
+.person-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.history-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+    background: rgba(17, 24, 39, 0.6);
+    font-size: 0.82rem;
+}
+
+.history-item-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.history-item-date {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.history-item-rival {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.history-seat-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--blue-soft);
+    color: #93c5fd;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid rgba(37, 99, 235, 0.3);
+}
+
+.empty-history-text {
+    margin: 10px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}

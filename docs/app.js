@@ -68,6 +68,12 @@ const statsSeasonToggle =
 const statsLoadMoreButton =
     document.getElementById("stats-load-more");
 
+const personHistorySelect =
+    document.getElementById("person-history-select");
+
+const personHistoryList =
+    document.getElementById("person-history-list");
+
 const pastMatchesContainer =
     document.getElementById("past-matches");
 
@@ -312,7 +318,7 @@ async function loadInitialData() {
         supabaseClient
             .from("attendance_stats")
             .select("*"),
-        
+
         supabaseClient
             .from("match_ticket_stats")
             .select("*"),
@@ -363,8 +369,8 @@ async function loadInitialData() {
 
     state.attendanceStats =
         statsResponse.data ?? [];
-    
-    state.ticketStats = 
+
+    state.ticketStats =
         ticketStatsResponse.data ?? [];
 }
 
@@ -1253,18 +1259,20 @@ function renderStats() {
         ? peopleWithStats
         : peopleWithStats.filter(p => [1, 2, 3, 4].includes(p.id));
 
+    // 4. FILTRAR GENT AMB 0 ASSISTÈNCIES I ORDENAR DESCENDENTMENT
+    basePeople = basePeople.filter(p => p.attended > 0);
     basePeople.sort((a, b) => b.attended - a.attended || a.name.localeCompare(b.name));
 
     // 3. Renderitzar les noves targetes
     statsSummary.innerHTML = `
         ${renderStatCard(
-            state.statsAllSeasons ? "Partits disponibles (Totes les temp.)" : "Partits disponibles (Temporada actual)",
-            availableMatches
-        )}
+        state.statsAllSeasons ? "Partits disponibles (Totes les temp.)" : "Partits disponibles (Temporada ctual)",
+        availableMatches
+    )}
         ${renderStatCard(
-            "Entrades demanades",
-            `${requestedMatches} (${percentage}%)`
-        )}
+        "Entrades demanades",
+        `${requestedMatches} (${percentage}%)`
+    )}
     `;
 
     // 4. Botó Carregar-ne més
@@ -1593,7 +1601,18 @@ pastLoadMoreButton.addEventListener(
 if (statsSeasonToggle) {
     statsSeasonToggle.addEventListener("change", (e) => {
         state.statsAllSeasons = e.target.checked;
+
+        // 1. Recarrega les targetes i el gràfic
         renderStats();
+
+        // 2. Recarrega l'historial de la persona seleccionada actualment
+        const selectedPersonId = personHistorySelect?.value
+            ? Number(personHistorySelect.value)
+            : null;
+
+        if (selectedPersonId) {
+            loadPersonMatchHistory(selectedPersonId);
+        }
     });
 }
 
@@ -1601,5 +1620,12 @@ if (statsLoadMoreButton) {
     statsLoadMoreButton.addEventListener("click", () => {
         state.statsShowAllPeople = true;
         renderStats();
+    });
+}
+
+if (personHistorySelect) {
+    personHistorySelect.addEventListener("change", (e) => {
+        const personId = e.target.value ? Number(e.target.value) : null;
+        loadPersonMatchHistory(personId);
     });
 }

@@ -56,9 +56,14 @@ join matches m
 join settings s
     on s.season_id = m.season_id
     and s.home_team_id = m.home_team_id
+<<<<<<< HEAD
 where m.status = 'FINISHED'
   and a.person_id is not null
   and m.date > '2025-11-01' --abans no teniem abonament
+=======
+where a.person_id is not null
+    and m.date > '2025-11-01' --abans no teniem abonament
+>>>>>>> b443847 (feat: improve stats section, remove FINISHED from attendance)
 group by
     a.person_id,
     p.name,
@@ -117,7 +122,13 @@ join people p
     on p.id = s.owner_id;
 
 drop view if exists match_ticket_stats;
+<<<<<<< HEAD
 create or replace view match_ticket_stats as
+=======
+create or replace view match_ticket_stats
+with (security_invoker = true)
+as
+>>>>>>> b443847 (feat: improve stats section, remove FINISHED from attendance)
 select 
     s.name as season_name,
     m.season_id,

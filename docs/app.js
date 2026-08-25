@@ -1255,7 +1255,7 @@ function renderStats() {
         attended: statsByPerson.get(Number(person.id)) || 0
     }));
 
-    const basePeople = state.statsShowAllPeople
+    let basePeople = state.statsShowAllPeople
         ? peopleWithStats
         : peopleWithStats.filter(p => [1, 2, 3, 4].includes(p.id));
 

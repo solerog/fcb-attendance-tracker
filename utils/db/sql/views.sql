@@ -58,6 +58,7 @@ join settings s
     and s.home_team_id = m.home_team_id
 where m.status = 'FINISHED'
   and a.person_id is not null
+  and m.date > '2025-11-01' --abans no teniem abonament
 group by
     a.person_id,
     p.name,
@@ -115,11 +116,33 @@ from seats s
 join people p
     on p.id = s.owner_id;
 
+drop view if exists match_ticket_stats;
+create or replace view match_ticket_stats as
+select 
+    s.name as season_name,
+    m.season_id,
+    count(m.id) as available_matches,
+    count(m.id) filter (where m.tickets_requested = true) as requested_matches,
+    count(m.id) filter (where m.tickets_requested = false OR m.tickets_requested is null) as not_requested_matches,
+    round(
+        (count(m.id) filter (where m.tickets_requested = TRUE)::numeric / nullif(count(m.id), 0)) * 100, 
+        1
+    ) as requested_percentage
+from matches m
+join seasons s on s.id = m.season_id
+where m.home_team_id = 81
+and m.date > '2025-11-01'
+and (m.date < now() or m.tickets_open or m.tickets_requested)
+group by m.season_id, s.name
+order by m.season_id desc;
+
 revoke all on match_details from anon;
 revoke all on attendance_stats from anon;
 revoke all on attendance_details from anon;
 revoke all on seat_details from anon;
+revoke all on match_ticket_stats from anon;
 grant select on match_details to authenticated;
 grant select on attendance_stats to authenticated;
 grant select on attendance_details to authenticated;
 grant select on seat_details to authenticated;
+grant select on match_ticket_stats to authenticated;

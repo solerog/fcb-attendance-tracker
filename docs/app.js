@@ -17,6 +17,7 @@ const state = {
     calendarMatches: [],
     pastMatches: [],
     attendanceStats: [],
+    ticketStats: [],
 
     calendarVisible: 5,
     pastVisible: 2,
@@ -267,6 +268,7 @@ async function loadInitialData() {
         calendarResponse,
         pastResponse,
         statsResponse,
+        ticketStatsResponse,
     ] = await Promise.all([
         supabaseClient
             .from("settings")
@@ -310,6 +312,10 @@ async function loadInitialData() {
         supabaseClient
             .from("attendance_stats")
             .select("*"),
+        
+        supabaseClient
+            .from("match_ticket_stats")
+            .select("*"),
     ]);
 
     const responses = [
@@ -320,6 +326,7 @@ async function loadInitialData() {
         calendarResponse,
         pastResponse,
         statsResponse,
+        ticketStatsResponse
     ];
 
     for (const response of responses) {
@@ -356,6 +363,9 @@ async function loadInitialData() {
 
     state.attendanceStats =
         statsResponse.data ?? [];
+    
+    state.ticketStats = 
+        ticketStatsResponse.data ?? [];
 }
 
 
@@ -1204,55 +1214,60 @@ function renderPastMatchCard(match) {
 
 
 function renderStats() {
-    // 1. Filtrar partits passats segons el toggle de temporada[cite: 3]
-    const filteredPastMatches = state.pastMatches.filter(match => {
-        const isHome = match.home_team_id === state.homeTeamId;
-        if (!isHome) return false;
-        if (state.statsAllSeasons) return true;
-        return match.season_id === state.currentSeasonId;
-    });
+    // 1. Obtenir les dades de la vista segons el filtre de temporada
+    let availableMatches = 0;
+    let requestedMatches = 0;
+    let percentage = 0;
 
-    const totalMatches = filteredPastMatches.length;
+    if (state.statsAllSeasons) {
+        // Acumular totes les temporades
+        availableMatches = state.ticketStats.reduce((sum, row) => sum + Number(row.available_matches || 0), 0);
+        requestedMatches = state.ticketStats.reduce((sum, row) => sum + Number(row.requested_matches || 0), 0);
+        percentage = availableMatches > 0 ? Math.round((requestedMatches / availableMatches) * 1000) / 10 : 0;
+    } else {
+        // Temporada actual
+        const currentSeasonStat = state.ticketStats.find(row => row.season_id === state.currentSeasonId);
+        if (currentSeasonStat) {
+            availableMatches = Number(currentSeasonStat.available_matches || 0);
+            requestedMatches = Number(currentSeasonStat.requested_matches || 0);
+            percentage = Number(currentSeasonStat.requested_percentage || 0);
+        }
+    }
 
-    // 2. Mapejar assistències segons temporada[cite: 3]
+    // 2. Mapejar assistències de persones
     const statsByPerson = new Map();
     state.attendanceStats.forEach(item => {
         if (state.statsAllSeasons || item.season_id === state.currentSeasonId || !item.season_id) {
             const current = statsByPerson.get(Number(item.person_id)) || 0;
-            statsByPerson.set(Number(item.person_id), current + Number(item.matches_attended));
+            statsByPerson.set(Number(item.person_id), current + Number(item.matches_attended || 0));
         }
     });
 
-    // 3. Preparar la llista de persones amb les seves assistències
     const peopleWithStats = state.people.map(person => ({
         id: Number(person.id),
         name: `${person.name} ${person.first_surname || person.surname || ""}`.trim(),
         attended: statsByPerson.get(Number(person.id)) || 0
     }));
 
-    // 4. Filtrar per persones principals (1-4) o tothom segons l'estat del botó
     const basePeople = state.statsShowAllPeople
         ? peopleWithStats
         : peopleWithStats.filter(p => [1, 2, 3, 4].includes(p.id));
 
-    // 5. ORDENAR de més assistències a menys (i per nom si empaten)
     basePeople.sort((a, b) => b.attended - a.attended || a.name.localeCompare(b.name));
 
-    const totalAttendance = basePeople.reduce((sum, p) => sum + p.attended, 0);
-
-    // Renderitzar targetes de resum[cite: 3]
+    // 3. Renderitzar les noves targetes
     statsSummary.innerHTML = `
         ${renderStatCard(
-        state.statsAllSeasons ? "Partits a casa (Històric)" : "Partits a casa (Temporada actual)",
-        totalMatches
-    )}
+            state.statsAllSeasons ? "Partits disponibles (Totes les temp.)" : "Partits disponibles (Temporada actual)",
+            availableMatches
+        )}
         ${renderStatCard(
-        "Assistències totals registrades",
-        totalAttendance
-    )}
+            "Entrades demanades",
+            `${requestedMatches} (${percentage}%)`
+        )}
     `;
 
-    // Gestionar visibilitat del botó "Carregar-ne més"
+    // 4. Botó Carregar-ne més
     if (statsLoadMoreButton) {
         if (state.statsShowAllPeople || peopleWithStats.length <= 4) {
             statsLoadMoreButton.hidden = true;
@@ -1262,7 +1277,7 @@ function renderStats() {
         }
     }
 
-    renderAttendanceChart(basePeople, totalMatches);
+    renderAttendanceChart(basePeople, requestedMatches);
 }
 
 
@@ -1337,7 +1352,7 @@ function renderAttendanceChart(sortedPeople, totalMatches) {
                 },
                 y: {
                     beginAtZero: true,
-                    suggestedMax: Math.max(...dataValues, totalMatches, 4),
+                    suggestedMax: Math.max(...dataValues, 4),
                     grid: {
                         color: "rgba(255, 255, 255, 0.05)",
                     },

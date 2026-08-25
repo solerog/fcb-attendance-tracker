@@ -4,7 +4,7 @@
 import argparse
 import os
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any, cast
 
 from dotenv import load_dotenv
@@ -142,7 +142,7 @@ def sync_matches(full_fetch: bool = False) -> None:
     max_date_to = max(r[1] for r in all_ranges)
 
     if not full_fetch:
-        min_date_from = datetime.now(UTC).date()
+        min_date_from = datetime.now(UTC).date() - timedelta(days=2)
 
     all_raw_matches: list[dict[str, Any]] = []
 

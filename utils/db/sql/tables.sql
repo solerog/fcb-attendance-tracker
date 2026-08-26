@@ -102,6 +102,11 @@ create table attendance (
     match_id bigint not null references matches(id) on delete cascade,
     seat_id smallint not null references seats(id) on delete cascade,
     person_id smallint references people(id),
+    acces text,
+    porta smallint,
+    boca smallint,
+    fila smallint,
+    seient smallint,
     primary key (match_id, seat_id),
     constraint attendance_one_seat_per_person
         unique (match_id, person_id)

@@ -54,13 +54,12 @@ def match_fixture(
             best_match = fixture
             best_diff = diff
 
-    # Exigim que la diferència de data sigui raonable (menys de 3 dies)
-    if best_match is None or (best_diff is not None and best_diff > 259200):
+    # Tolerància de 36 hores (129.600 segons) per cobrir ajustos d'horari
+    if best_match is None or (best_diff is not None and best_diff > 129600):
         return None
 
     fixture_iso = best_match.get("date", "")
     fixture_dt = datetime.fromisoformat(fixture_iso).astimezone(LOCAL_TZ)
-    is_time_correct = abs((page_dt_utc - fixture_dt).total_seconds()) <= 1800
 
     return {
         "match_id": best_match.get("id"),
@@ -69,8 +68,6 @@ def match_fixture(
         "fixture_date_utc": fixture_iso,
         "fixture_date_local": fixture_dt.isoformat(),
         "page_match_datetime_local": page_dt.isoformat(),
-        "page_match_datetime_utc": page_dt_utc.isoformat(),
-        "is_time_correct": is_time_correct,
     }
 
 
@@ -83,19 +80,32 @@ def extract_open_matches(html: str) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
 
-    for block in article.find_all(["h3", "p", "div"], recursive=True):
-        if block.name == "h3":
-            title = block.get_text(" ", strip=True)
+    # Busquem tant spans amb data-teams="true" com h3, p i div
+    for block in article.find_all(["span", "h3", "p", "div"], recursive=True):
+        is_title_block = False
+        title_text = ""
+
+        # Format 1: <span data-teams="true">RIVAL. DD/MM/YY- HH.MM h</span>
+        if (
+            block.name == "span"
+            and block.get("data-teams") == "true"
+            or block.name == "h3"
+        ):
+            is_title_block = True
+            title_text = block.get_text(" ", strip=True)
+
+        if is_title_block:
+            # Regex flexible per capturar data (DD/MM/YY) i hora (HH.MM o HH:MM)
             match = re.search(
-                r"FC BARCELONA\s*-\s*(.+?)\s*-\s*(\d{2}/\d{2}/\d{2})\s*-\s*([\d.]+)\s*H",
-                title,
+                r"(\d{2}/\d{2}/\d{2})\s*[-–]\s*([\d.]+)\s*h?",
+                title_text,
                 flags=re.IGNORECASE,
             )
             if match:
                 current = {
-                    "rival": match.group(1).strip(),
-                    "date_text": match.group(2).strip(),
-                    "time_text": match.group(3).strip(),
+                    "raw_title": title_text,
+                    "date_text": match.group(1).strip(),
+                    "time_text": match.group(2).strip(),
                     "deadline": None,
                     "deadline_text": None,
                     "button_url": None,

@@ -1418,8 +1418,12 @@ button:disabled {
 .competition-emblem {
     width: 24px;
     height: 24px;
-    flex: 0 0 auto;
+    padding: 2px;
+    flex-shrink: 0;
     object-fit: contain;
+    filter: brightness(0) invert(1);
+    /* Torna el logo completament blanc */
+    opacity: 0.9;
 }
 
 .competition-emblem--small {
@@ -1647,15 +1651,6 @@ button:disabled {
 
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.competition-emblem {
-    width: 22px;
-    height: 22px;
-
-    flex-shrink: 0;
-
-    object-fit: contain;
 }
 
 @media (max-width: 700px) {

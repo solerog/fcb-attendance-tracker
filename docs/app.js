@@ -304,6 +304,7 @@ async function loadInitialData() {
             .select("*")
             .gte("date", new Date().toISOString())
             .eq("tickets_open", false)
+            .eq("tickets_requested", false)
             .order("date"),
 
         supabaseClient

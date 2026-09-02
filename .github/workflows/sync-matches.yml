@@ -4,6 +4,7 @@ on:
   schedule:
     # 2 cops al dia: 07:00 i 19:00 UTC
     - cron: "0 7,19 * * *"
+      timezone: "Europe/Madrid"
   workflow_dispatch:
 
 jobs:

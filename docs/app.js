@@ -377,74 +377,38 @@ async function loadInitialData() {
 
 
 async function attachUpcomingAttendance() {
-    const matchIds =
-        state.upcomingMatches.map(
-            match => match.id
-        );
+    const matchIds = state.upcomingMatches.map(m => m.id);
+    if (matchIds.length === 0) return;
 
-    if (matchIds.length === 0) {
-        return;
-    }
-
-    const {
-        data,
-        error,
-    } = await supabaseClient
+    const { data, error } = await supabaseClient
         .from("attendance")
         .select("*")
         .in("match_id", matchIds);
 
     if (error) {
-        console.error(
-            "Error carregant assistències:",
-            error
-        );
-
+        console.error("Error carregant assistències:", error);
         return;
     }
 
-    const attendanceByMatch =
-        new Map();
-
+    const rowsByMatch = new Map();
     for (const item of data ?? []) {
-        if (
-            !attendanceByMatch.has(
-                item.match_id
-            )
-        ) {
-            attendanceByMatch.set(
-                item.match_id,
-                new Map()
-            );
+        if (!rowsByMatch.has(item.match_id)) {
+            rowsByMatch.set(item.match_id, []);
         }
-
-        attendanceByMatch
-            .get(item.match_id)
-            .set(
-                item.seat_id,
-                item.person_id
-            );
+        rowsByMatch.get(item.match_id).push(item);
     }
 
     for (const match of state.upcomingMatches) {
         renderMatchAttendance(
             match.id,
-            attendanceByMatch.get(
-                match.id
-            ) ?? new Map(),
+            rowsByMatch.get(match.id) ?? [],
             match.tickets_requested === true
         );
     }
 }
 
-
-async function loadMatchAttendance(
-    matchId
-) {
-    const {
-        data,
-        error,
-    } = await supabaseClient
+async function loadMatchAttendance(matchId) {
+    const { data, error } = await supabaseClient
         .from("attendance")
         .select("*")
         .eq("match_id", matchId);
@@ -454,74 +418,93 @@ async function loadMatchAttendance(
         return;
     }
 
-    const attendanceBySeat =
-        new Map(
-            (data ?? []).map(item => [
-                item.seat_id,
-                item.person_id,
-            ])
-        );
-
     const match = state.upcomingMatches.find(m => m.id === matchId);
     const isLocked = match ? match.tickets_requested === true : false;
 
-    renderMatchAttendance(
-        matchId,
-        attendanceBySeat,
-        isLocked
-    );
+    renderMatchAttendance(matchId, data ?? [], isLocked);
 }
 
 
 function renderMatchAttendance(
     matchId,
-    attendanceBySeat,
+    attendanceRows,
     isLocked
 ) {
-    const container =
-        document.querySelector(
-            `[data-attendance-match="${matchId}"]`
-        );
+    const container = document.querySelector(
+        `[data-attendance-match="${matchId}"]`
+    );
 
-    if (!container) {
-        return;
-    }
+    if (!container) return;
 
+    const attendanceBySeat = new Map(
+        attendanceRows.map(item => [item.seat_id, item.person_id])
+    );
+
+    // 1. Generem els selectors dels seients
     const allAssignedPersons = new Set(
         Array.from(attendanceBySeat.values())
             .filter(id => id !== null && id !== undefined)
             .map(Number)
     );
 
-    container.innerHTML =
-        state.seats
-            .map(seat => {
-                const currentSeatPersonId = attendanceBySeat.get(seat.id);
+    const selectorsHtml = state.seats
+        .map(seat => {
+            const currentSeatPersonId = attendanceBySeat.get(seat.id);
+            const otherSeatsAssigned = new Set(allAssignedPersons);
+            if (currentSeatPersonId) {
+                otherSeatsAssigned.delete(Number(currentSeatPersonId));
+            }
 
-                const otherSeatsAssigned = new Set(allAssignedPersons);
-                if (currentSeatPersonId) {
-                    otherSeatsAssigned.delete(Number(currentSeatPersonId));
-                }
+            return renderSeatSelector(
+                matchId,
+                seat,
+                currentSeatPersonId,
+                isLocked,
+                otherSeatsAssigned
+            );
+        })
+        .join("");
 
-                return renderSeatSelector(
-                    matchId,
-                    seat,
-                    currentSeatPersonId,
-                    isLocked,
-                    otherSeatsAssigned
-                );
-            })
-            .join("");
+    // 2. Generem les dades d'ubicació (si n'hi ha)
+    const rowsWithLocation = attendanceRows.filter(r => r.boca || r.porta || r.fila || r.seient);
+    let locationHtml = "";
+
+    if (rowsWithLocation.length > 0) {
+        const first = rowsWithLocation[0];
+        const acces = first.acces ? `Accés ${first.acces}` : "";
+        const porta = first.porta ? `Porta ${first.porta}` : "";
+        const boca = first.boca ? `Boca ${first.boca}` : "";
+        const fila = first.fila ? `Fila ${first.fila}` : "";
+
+        const seients = rowsWithLocation
+            .map(r => r.seient)
+            .filter(Boolean)
+            .sort((a, b) => Number(a) - Number(b))
+            .join(", ");
+
+        const commonParts = [acces, porta, boca, fila].filter(Boolean).join(" · ");
+        const seatsPart = seients ? `Seients ${seients}` : "";
+
+        locationHtml = `
+            <div class="ticket-location-compact">
+                <span class="location-icon">📍</span>
+                <span class="location-text">
+                    ${escapeHtml(commonParts)}${commonParts && seatsPart ? " · " : ""}<strong>${escapeHtml(seatsPart)}</strong>
+                </span>
+            </div>
+        `;
+    }
+
+    // Inserim primer els desplegables i a sota la informació de les localitats
+    container.innerHTML = `
+        ${selectorsHtml}
+        ${locationHtml}
+    `;
 
     container
-        .querySelectorAll(
-            "select[data-seat-id]"
-        )
+        .querySelectorAll("select[data-seat-id]")
         .forEach(select => {
-            select.addEventListener(
-                "change",
-                handleAttendanceChange
-            );
+            select.addEventListener("change", handleAttendanceChange);
         });
 }
 
@@ -693,26 +676,9 @@ function renderUpcomingMatches() {
                 select.disabled = false;
             });
 
-            const ticketsToggle = matchCard.querySelector(".tickets-requested-toggle");
-
-            ticketsToggle
-                ?.closest(".toggle-control")
-                ?.classList.remove("hidden");
-
             button.classList.add("hidden");
         });
     });
-
-    document
-        .querySelectorAll(
-            ".tickets-requested-toggle"
-        )
-        .forEach(toggle => {
-            toggle.addEventListener(
-                "change",
-                handleTicketsRequestedChange
-            );
-        });
 }
 
 
@@ -726,14 +692,22 @@ function renderUpcomingMatch(match) {
         match.competition_name ??
         "";
 
-    const ticketStatus =
-        match.tickets_requested
-            ? "Entrades demanades"
-            : match.tickets_open
-                ? "Entrades obertes"
-                : "";
+    const isRequested = match.tickets_requested === true;
+    const isLocked = isRequested;
+    const deadlineFormatted = formatDeadline(match.request_deadline);
 
-    const isLocked = match.tickets_requested === true;
+    let statusText = "Sense entrades obertes";
+    let statusClass = "";
+
+    if (isRequested) {
+        statusText = "✅ Entrades demanades";
+        statusClass = "is-requested";
+    } else if (match.tickets_open) {
+        statusText = deadlineFormatted
+            ? `⏳ Entrades obertes fins el ${deadlineFormatted} h`
+            : "⏳ Entrades obertes";
+        statusClass = "is-open";
+    }
 
     return `
         <article class="match-card match-card--visual">
@@ -840,18 +814,8 @@ function renderUpcomingMatch(match) {
 
             <div class="match-card-footer">
 
-                <div class="ticket-status ${match.tickets_requested
-            ? "is-requested"
-            : match.tickets_open
-                ? "is-open"
-                : ""
-        }">
-
-                    ${escapeHtml(
-            ticketStatus ||
-            "Sense entrades obertes"
-        )}
-
+                <div class="ticket-status ${statusClass}">
+                    ${escapeHtml(statusText)}
                 </div>
 
                 <button
@@ -861,20 +825,6 @@ function renderUpcomingMatch(match) {
                 >
                     ✏️ Editar
                 </button>
-
-                <label class="toggle-control ${isLocked ? "hidden" : ""}">
-                    <input
-                        type="checkbox"
-                        class="tickets-requested-toggle
-                        ${match.tickets_requested ? "checked" : ""}"
-                        data-match-id="${match.id}"
-                    >
-
-                    <span class="toggle-label">
-                        Entrades demanades
-                    </span>
-
-                </label>
 
             </div>
 
@@ -892,69 +842,6 @@ function renderUpcomingMatch(match) {
 
         </article>
     `;
-}
-
-
-async function handleTicketsRequestedChange(
-    event
-) {
-    const checkbox =
-        event.target;
-
-    const matchId =
-        Number(
-            checkbox.dataset.matchId
-        );
-
-    const requested =
-        checkbox.checked;
-
-    checkbox.disabled = true;
-
-    try {
-        const { error } =
-            await supabaseClient.rpc(
-                "set_tickets_requested",
-                {
-                    p_match_id: matchId,
-                    p_requested: requested,
-                }
-            );
-
-        if (error) {
-            throw error;
-        }
-
-        const match =
-            state.upcomingMatches.find(
-                item =>
-                    item.id === matchId
-            );
-
-        if (match) {
-            match.tickets_requested =
-                requested;
-        }
-
-        renderUpcomingMatches();
-
-        await attachUpcomingAttendance();
-    } catch (error) {
-        console.error(
-            "Error actualitzant les entrades:",
-            error
-        );
-
-        checkbox.checked =
-            !requested;
-
-        alert(
-            error.message ||
-            "No s'ha pogut actualitzar l'estat de les entrades."
-        );
-    } finally {
-        checkbox.disabled = false;
-    }
 }
 
 
@@ -1005,11 +892,6 @@ function renderCalendarMatch(match) {
     const isHome =
         match.home_team_id ===
         state.homeTeamId;
-
-    const competitionName =
-        match.competition_shortname ??
-        match.competition_name ??
-        "";
 
     return `
         <article class="match-row ${isHome
@@ -1221,7 +1103,6 @@ function renderPastMatchCard(match) {
 
 
 function renderStats() {
-    // 1. Dades de la vista match_ticket_stats
     let availableMatches = 0;
     let requestedMatches = 0;
     let percentage = 0;
@@ -1239,7 +1120,6 @@ function renderStats() {
         }
     }
 
-    // 2. Mapejar assistències de persones
     const statsByPerson = new Map();
     state.attendanceStats.forEach(item => {
         if (state.statsAllSeasons || item.season_id === state.currentSeasonId || !item.season_id) {
@@ -1254,16 +1134,13 @@ function renderStats() {
         attended: statsByPerson.get(Number(person.id)) || 0
     }));
 
-    // 3. Filtrar per les 4 principals o tothom
     let basePeople = state.statsShowAllPeople
         ? peopleWithStats
         : peopleWithStats.filter(p => [1, 2, 3, 4].includes(p.id));
 
-    // 4. FILTRAR GENT AMB 0 ASSISTÈNCIES I ORDENAR DESCENDENTMENT
     basePeople = basePeople.filter(p => p.attended > 0);
     basePeople.sort((a, b) => b.attended - a.attended || a.name.localeCompare(b.name));
 
-    // Renderitzar targetes de resum
     statsSummary.innerHTML = `
         ${renderStatCard(
         state.statsAllSeasons ? "Partits disponibles (Totes)" : "Partits disponibles (Actual)",
@@ -1275,7 +1152,6 @@ function renderStats() {
     )}
     `;
 
-    // Botó "Carregar-ne més"
     if (statsLoadMoreButton) {
         if (state.statsShowAllPeople || peopleWithStats.length <= 4) {
             statsLoadMoreButton.hidden = true;
@@ -1289,11 +1165,12 @@ function renderStats() {
     populatePersonHistorySelect();
 }
 
-// 5. Omplir el selector de persones per consultar l'historial
-function populatePersonHistorySelect() {
-    if (!personHistorySelect) return;
 
-    const currentVal = personHistorySelect.value;
+function populatePersonHistorySelect() {
+    const select = document.getElementById("person-history-select");
+    if (!select) return;
+
+    const currentVal = select.value;
 
     const options = [
         '<option value="">Selecciona una persona</option>',
@@ -1304,10 +1181,10 @@ function populatePersonHistorySelect() {
         `)
     ].join("");
 
-    personHistorySelect.innerHTML = options;
+    select.innerHTML = options;
 }
 
-// 6. Carregar i mostrar els partits de la persona seleccionada
+
 async function loadPersonMatchHistory(personId) {
     if (!personId || !personHistoryList) {
         personHistoryList.innerHTML = '<p class="empty-history-text">Tria un assistent per veure el seu historial de partits.</p>';
@@ -1327,12 +1204,10 @@ async function loadPersonMatchHistory(personId) {
 
         let records = (data || []).filter(item => item.matches !== null);
 
-        // Filtrar per temporada si el toggle està desactivat
         if (!state.statsAllSeasons) {
             records = records.filter(item => item.matches.season_id === state.currentSeasonId);
         }
 
-        // Ordenar per data del partit més recent primer
         records.sort((a, b) => new Date(b.matches.date) - new Date(a.matches.date));
 
         if (records.length === 0) {
@@ -1345,13 +1220,16 @@ async function loadPersonMatchHistory(personId) {
             const rival = m.teams?.shortname || m.teams?.name || "Rival";
             const dateStr = formatDate(m.date);
 
+            const seat = state.seats.find(s => Number(s.id) === Number(item.seat_id));
+            const seatLabel = seat?.owner_name ? `Seient ${seat.owner_name}` : `Seient ${item.seat_id}`;
+
             return `
                 <div class="history-item-row">
                     <div class="history-item-info">
                         <span class="history-item-date">📅 ${dateStr}</span>
                         <span class="history-item-rival">vs ${escapeHtml(rival)}</span>
                     </div>
-                    <span class="history-seat-badge">Seient ${item.seat_id}</span>
+                    <span class="history-seat-badge">${escapeHtml(seatLabel)}</span>
                 </div>
             `;
         }).join("");
@@ -1582,6 +1460,19 @@ function formatDate(date) {
     );
 }
 
+function formatDeadline(isoString) {
+    if (!isoString) return null;
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return null;
+    return new Intl.DateTimeFormat("ca-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+    }).format(d).replace(",", "");
+}
+
 
 function getInitials(
     name,
@@ -1675,10 +1566,8 @@ if (statsSeasonToggle) {
     statsSeasonToggle.addEventListener("change", (e) => {
         state.statsAllSeasons = e.target.checked;
 
-        // 1. Recarrega les targetes i el gràfic
         renderStats();
 
-        // 2. Recarrega l'historial de la persona seleccionada actualment
         const selectedPersonId = personHistorySelect?.value
             ? Number(personHistorySelect.value)
             : null;

@@ -2,7 +2,7 @@ name: 4. Notify Open Requests
 
 on:
   schedule:
-    - cron: 37 8 * * *"
+    - cron: "37 8 * * *"
       timezone: "Europe/Madrid"
   workflow_dispatch:
 

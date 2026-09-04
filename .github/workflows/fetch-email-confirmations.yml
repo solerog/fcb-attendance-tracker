@@ -2,7 +2,7 @@ name: 2. Fetch Email Confirmations
 
 on:
   schedule:
-    - cron: "41 13,18,23 * * *"
+    - cron: "41 9,13,17 * * *"
       timezone: "Europe/Madrid"
   workflow_dispatch:
 

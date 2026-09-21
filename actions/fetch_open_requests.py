@@ -23,8 +23,11 @@ def parse_match_local_datetime(date_text: str, time_text: str) -> datetime:
     normalized_time = time_text.strip().replace(".", ":")
     if ":" not in normalized_time:
         normalized_time = f"{normalized_time}:00"
+
+    date_format = "%d/%m/%Y" if len(date_text.split("/")[-1]) == 4 else "%d/%m/%y"
+
     return datetime.strptime(
-        f"{date_text} {normalized_time}", "%d/%m/%y %H:%M"
+        f"{date_text} {normalized_time}", f"{date_format} %H:%M"
     ).replace(tzinfo=LOCAL_TZ)
 
 
@@ -86,18 +89,14 @@ def extract_open_matches(html: str) -> list[dict[str, Any]]:
         title_text = ""
 
         # Format 1: <span data-teams="true">RIVAL. DD/MM/YY- HH.MM h</span>
-        if (
-            block.name == "span"
-            and block.get("data-teams") == "true"
-            or block.name == "h3"
-        ):
+        if block.name == "span" or block.name == "h3":
             is_title_block = True
             title_text = block.get_text(" ", strip=True)
 
         if is_title_block:
             # Regex flexible per capturar data (DD/MM/YY) i hora (HH.MM o HH:MM)
             match = re.search(
-                r"(\d{2}/\d{2}/\d{2})\s*[-–]\s*([\d.]+)\s*h?",
+                r"(\d{2}/\d{2}/\d{2,4})\s*[-–]?\s*([\d.:]+)\s*h?",
                 title_text,
                 flags=re.IGNORECASE,
             )
@@ -120,7 +119,7 @@ def extract_open_matches(html: str) -> list[dict[str, Any]]:
         text = block.get_text(" ", strip=True)
         if "tancament formulari" in text.lower():
             deadline_match = re.search(
-                r"tancament formulari:\s*(\d{2}/\d{2}/\d{2})\s*a\s*les\s*([\d.]+)\s*h?",
+                r"tancament formulari:\s*(\d{2}/\d{2}/\d{2,4})\s*(?:a\s*les\s*|[-–]\s*)?([\d.:]+)\s*h?",
                 text,
                 flags=re.IGNORECASE,
             )

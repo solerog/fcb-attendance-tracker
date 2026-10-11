@@ -83,20 +83,25 @@ def extract_open_matches(html: str) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
 
-    # Busquem tant spans amb data-teams="true" com h3, p i div
-    for block in article.find_all(["span", "h3", "p", "div"], recursive=True):
-        is_title_block = False
+    # Iterem pels elements per capturar el h2 inicial i el span associat
+    for block in article.find_all(["h2", "span", "p", "div"], recursive=True):
         title_text = ""
+        is_title_block = False
 
-        # Format 1: <span data-teams="true">RIVAL. DD/MM/YY- HH.MM h</span>
-        if block.name == "span" or block.name == "h3":
+        # Si trobem un h2 que conté text de partit
+        if block.name == "h2":
+            is_title_block = True
+            title_text = block.get_text("", strip=True)
+
+        # Mantenim també compatibilitat si ve directament com a span data-teams
+        elif block.name == "span" and block.get("data-teams") == "true":
             is_title_block = True
             title_text = block.get_text(" ", strip=True)
 
         if is_title_block:
-            # Regex flexible per capturar data (DD/MM/YY) i hora (HH.MM o HH:MM)
+            # Regex flexible per capturar data i hora
             match = re.search(
-                r"(\d{2}/\d{2}/\d{2,4})\s*[-–]?\s*([\d.:]+)\s*h?",
+                r"(\d{2}/\d{2}/\d{2,4})\s*[-–]?\s*([\d.]+)\s*h?",
                 title_text,
                 flags=re.IGNORECASE,
             )
